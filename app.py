@@ -30,8 +30,6 @@ def login_portal():
 # --- Robust Data Persistence ---
 def save_patient_data(patient_name, input_df, pred_type, score, risk_lvl):
     file_path = 'patient_records.csv'
-    
-    # Create the record row
     new_record = input_df.copy()
     new_record['patient_name'] = patient_name
     new_record['prediction_type'] = pred_type
@@ -39,14 +37,12 @@ def save_patient_data(patient_name, input_df, pred_type, score, risk_lvl):
     new_record['risk_level'] = risk_lvl
     new_record['timestamp'] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     
-    # Define exact columns to prevent field mismatch errors
     cols = ['gender', 'age', 'hypertension', 'ever_married', 'work_type', 
             'Residence_type', 'avg_glucose_level', 'bmi', 'smoking_status', 
             'age_group', 'glucose_group', 'bmi_group', 'patient_name', 
             'prediction_type', 'score', 'risk_level', 'timestamp']
     
     new_record = new_record[cols]
-    
     file_exists = os.path.exists(file_path)
     new_record.to_csv(file_path, mode='a', header=not file_exists, index=False)
 
@@ -127,33 +123,30 @@ else:
                     st.info("Add more patient records to see the trend line.")
             except Exception: st.error("Database schema mismatch. Please use 'Reset Records' in Admin.")
 
-            # --- Fixed Primary Risk Drivers ---
+            # --- Robust Primary Risk Drivers ---
             st.subheader("📊 Primary Risk Drivers")
             try:
-                # 1. Access the ridge component
-                # If it's a pipeline, we access via named_steps['ridge']
-                # If it's a raw model, we access via .coef_
-                if hasattr(model, 'named_steps') and 'ridge' in model.named_steps:
-                    ridge_model = model.named_steps['ridge']
+                # Find the step containing 'coef_' (The actual model)
+                found_model = None
+                if hasattr(model, 'named_steps'):
+                    for step_name in model.named_steps:
+                        if hasattr(model.named_steps[step_name], 'coef_'):
+                            found_model = model.named_steps[step_name]
+                elif hasattr(model, 'coef_'):
+                    found_model = model
+                
+                if found_model:
+                    coefs = found_model.coef_.flatten()
+                    # Map coefficients to labels
+                    weights = pd.DataFrame({'Feature': ['Age', 'Hypertension', 'Glucose', 'BMI'], 
+                                            'Impact': np.abs(coefs[:4])})
+                    fig2, ax2 = plt.subplots(figsize=(8, 3))
+                    sns.barplot(x='Impact', y='Feature', data=weights, palette='coolwarm')
+                    st.pyplot(fig2)
                 else:
-                    ridge_model = model
-                
-                # 2. Get coefficients
-                coefs = ridge_model.coef_
-                
-                # 3. Map to feature names (Ensure this matches your training order!)
-                # Note: Adjust the feature names if your model was trained on more columns
-                weights = pd.DataFrame({
-                    'Feature': ['Age', 'Hypertension', 'Glucose', 'BMI'], 
-                    'Impact': np.abs(coefs[:4])
-                })
-                
-                fig2, ax2 = plt.subplots(figsize=(8, 3))
-                sns.barplot(x='Impact', y='Feature', data=weights, palette='coolwarm')
-                st.pyplot(fig2)
-                
+                    st.warning("Could not identify the model's coefficients.")
             except Exception as e:
-                st.error(f"Debug: Could not extract coefficients. Error: {e}")
+                st.error(f"Debug: {e}")
 
     with st.expander("View Saved Patient Records 📝 (Admin)"):
         if os.path.exists('patient_records.csv'):
@@ -167,4 +160,3 @@ else:
 
     st.markdown("---")
     st.markdown("<div style='text-align: center; color: #888;'>BOUESTI GROUP 5 Project • March 2026</div>", unsafe_allow_html=True)
-

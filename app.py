@@ -21,7 +21,7 @@ def login_portal():
     password = st.text_input("Password", type="password")
     if st.button("Login"):
         # Set your credentials here
-        if username == "admin" and password == "bouesti2026":
+        if username == "team 5" and password == "bouesti2026":
             st.session_state.logged_in = True
             st.rerun()
         else:
@@ -157,4 +157,5 @@ else:
         """,
         unsafe_allow_html=True
     )
+
 

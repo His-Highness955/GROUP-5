@@ -138,9 +138,10 @@ else:
         <div style='text-align: center; color: #888; padding: 20px 0;'>
             <strong>BOUESTI GROUP 5 Project</strong> • 🏥 EKITI STATE BOUESTI STUDENT GROUP 5 CLINIC <br>
             Ikere-Ekiti / Ikere City • March 2026<br>
-            <small>Ridge Regression Analysis for Cardiovascular Health</small>
+            <small>Ridge Regression prediction model for GROUP E</small>
         </div>
         """, unsafe_allow_html=True)
+
 
 
 

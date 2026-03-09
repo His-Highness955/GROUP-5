@@ -51,7 +51,7 @@ else:
     model = load_model()
 
     # --- Header ---
-    st.title("❤️ Heart Disease & Stroke Risk Predictor")
+    st.title("🫀 Heart Disease & Stroke Risk Predictor")
     st.info("Educational Tool: Predicting Cardiovascular Disease (CVD) risks using Ridge Regression.")
 
     # Sidebar Logout Button
@@ -151,11 +151,12 @@ else:
     st.markdown(
         """
         <div style='text-align: center; color: #888; padding: 20px 0;'>
-            <strong>BOUESTI Engineering Project</strong> • Ikere-Ekiti / Benin City • March 2026<br>
+            <strong>BOUESTI Engineering Project</strong> • Ikere-Ekiti / ikere city • March 2026<br>
             <small>Ridge Regression Analysis for Cardiovascular Health</small>
         </div>
         """,
         unsafe_allow_html=True
     )
+
 
 

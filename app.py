@@ -114,13 +114,13 @@ else:
             score = model.decision_function(input_df)[0] if hasattr(model, 'decision_function') else 0.0
 
             save_patient_data(patient_name, input_df, prediction, score)
-            st.success(f"Risk analysis complete and record saved for {patient_name}!")
+            st.success(f"Risk analysis complete and record saved 🗃️ for {patient_name}!")
             st.metric("Risk Decision Score", f"{score:.3f}")
         else:
             st.warning("Please ensure the model is loaded and patient name is provided.")
 
     # --- Admin Records ---
-    with st.expander("View Saved Patient Records (Admin)"):
+    with st.expander("View Saved Patient Records 📝 (Admin)"):
         if os.path.exists('patient_records.csv'):
             st.dataframe(pd.read_csv('patient_records.csv'))
         else:
@@ -135,3 +135,4 @@ else:
             <small>Ridge Regression Analysis for Cardiovascular Health</small>
         </div>
         """, unsafe_allow_html=True)
+

@@ -122,43 +122,6 @@ else:
             elif risk_lvl == "ELEVATED": st.warning(f"Status: {risk_lvl} - Lifestyle Intervention Advised")
             else: st.success(f"Status: {risk_lvl} - Maintenance Recommended")
 
-            # --- Personalized Patient Risk Contribution ---
-            st.subheader("📊 Personalized Risk Drivers")
-            try:
-                model_step = None
-                preprocessor = None
-                
-                if hasattr(model, 'named_steps'):
-                    steps = list(model.named_steps.values())
-                    model_step = steps[-1]
-                    if len(steps) > 1:
-                        preprocessor = steps[0]
-                elif hasattr(model, 'coef_'):
-                    model_step = model
-
-                if model_step and hasattr(model_step, 'coef_'):
-                    # Apply transformation to match model's expected scale
-                    if preprocessor and hasattr(preprocessor, 'transform'):
-                        transformed_data = preprocessor.transform(input_df)
-                    else:
-                        transformed_data = input_df.select_dtypes(include=[np.number]).values
-
-                    coefs = model_step.coef_.flatten()
-                    features = ['Age', 'Hypertension', 'Glucose', 'BMI']
-                    n_feats = min(len(features), transformed_data.shape[1])
-                    
-                    impacts = [transformed_data[0, i] * coefs[i] for i in range(n_feats)]
-                    weights = pd.DataFrame({'Feature': features[:n_feats], 'Contribution': impacts})
-                    
-                    fig2, ax2 = plt.subplots(figsize=(8, 3))
-                    sns.barplot(x='Contribution', y='Feature', data=weights, palette='coolwarm')
-                    st.pyplot(fig2)
-                    st.caption("This shows the scaled impact of your clinical metrics on the risk score.")
-                else:
-                    st.error("Could not process model coefficients.")
-            except Exception as e:
-                st.error(f"Debug: Calculation error: {e}")
-
     with st.expander("View Saved Patient Records 📝 (Admin)"):
         if os.path.exists('patient_records.csv'):
             try:
@@ -171,3 +134,4 @@ else:
 
     st.markdown("---")
     st.markdown("<div style='text-align: center; color: #888;'>BOUESTI GROUP 5 Project • March 2026 • ikere ekiti</div>", unsafe_allow_html=True)
+

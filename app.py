@@ -55,7 +55,6 @@ else:
     st.title("🫀 Hospital Risk Assessment Portal")
     st.markdown("### 🏥 EKITI STATE BOUESTI STUDENT GROUP 5 CLINIC")
 
-    # Sidebar Inputs
     with st.sidebar:
         if st.button("Logout"): st.session_state.logged_in = False; st.rerun()
         st.header("👤 Patient Info")
@@ -72,64 +71,70 @@ else:
         work_type = st.selectbox("Work Type", ["Private", "Self-employed", "Govt_job", "children", "Never_worked", "Student"])
         smoking_status = st.selectbox("Smoking Status", ["never smoked", "formerly smoked", "smokes", "Unknown"])
 
-    # --- UI: Prediction Buttons at the Top ---
+    # UI: Buttons
     st.subheader("Select Assessment Type")
     col1, col2, col3 = st.columns(3)
     
-    # Placeholder for results
-    results_container = st.container()
+    # Logic to handle buttons without passing them into functions
+    pred_type = None
+    if col1.button("Predict Heart Risk"): pred_type = "Heart"
+    if col2.button("Predict Stroke Risk"): pred_type = "Stroke"
+    if col3.button("Predict Both"): pred_type = "Combined"
 
-    def run_clinical_assessment(pred_type):
+    if pred_type:
         if not model or not patient_name:
             st.warning("Please ensure model is loaded and patient name is provided.")
-            return
-
-        age_grp, glu_grp, bmi_grp = engineer_features(age, avg_glucose_level, bmi)
-        input_df = pd.DataFrame({
-            'gender': [gender], 'age': [age], 'hypertension': [hypertension], 
-            'ever_married': [ever_married], 'work_type': [work_type], 
-            'Residence_type': [residence_type], 'avg_glucose_level': [avg_glucose_level], 
-            'bmi': [bmi], 'smoking_status': [smoking_status], 
-            'age_group': [age_grp], 'glucose_group': [glu_grp], 'bmi_group': [bmi_grp]
-        })
-        
-        raw_score = model.decision_function(input_df)[0]
-        multipliers = {"Heart": 0.9, "Stroke": 1.1, "Combined": 1.4}
-        adj_score = raw_score * multipliers.get(pred_type, 1.0)
-        risk_lvl = "CRITICAL" if adj_score > 2.0 else "ELEVATED" if adj_score > 1.0 else "STABLE"
-        save_patient_data(patient_name, input_df, pred_type, adj_score, risk_lvl)
-        
-        with results_container:
+        else:
+            # Prediction Engine
+            age_grp, glu_grp, bmi_grp = engineer_features(age, avg_glucose_level, bmi)
+            input_df = pd.DataFrame({
+                'gender': [gender], 'age': [age], 'hypertension': [hypertension], 
+                'ever_married': [ever_married], 'work_type': [work_type], 
+                'Residence_type': [residence_type], 'avg_glucose_level': [avg_glucose_level], 
+                'bmi': [bmi], 'smoking_status': [smoking_status], 
+                'age_group': [age_grp], 'glucose_group': [glu_grp], 'bmi_group': [bmi_grp]
+            })
+            
+            raw_score = model.decision_function(input_df)[0]
+            multipliers = {"Heart": 0.9, "Stroke": 1.1, "Combined": 1.4}
+            adj_score = raw_score * multipliers.get(pred_type, 1.0)
+            risk_lvl = "CRITICAL" if adj_score > 2.0 else "ELEVATED" if adj_score > 1.0 else "STABLE"
+            save_patient_data(patient_name, input_df, pred_type, adj_score, risk_lvl)
+            
             st.divider()
             st.metric(f"{pred_type} Risk Score", f"{adj_score:.3f}")
             if risk_lvl == "CRITICAL": st.error(f"Triage Status: {risk_lvl}")
             elif risk_lvl == "ELEVATED": st.warning(f"Triage Status: {risk_lvl}")
             else: st.success(f"Triage Status: {risk_lvl}")
 
-            # Fixed Trend Analysis
+            # Safe Trend Analysis
             st.subheader("📈 Clinical Trend Analysis")
-            df = pd.read_csv('patient_records.csv')
-            df['timestamp'] = pd.to_datetime(df['timestamp'])
-            fig, ax = plt.subplots(figsize=(10, 3))
-            sns.lineplot(x='timestamp', y='score', hue='prediction_type', data=df, marker='o', ax=ax)
-            st.pyplot(fig)
+            try:
+                df = pd.read_csv('patient_records.csv', engine='python')
+                df['timestamp'] = pd.to_datetime(df['timestamp'])
+                fig, ax = plt.subplots(figsize=(10, 3))
+                sns.lineplot(x='timestamp', y='score', hue='prediction_type', data=df, marker='o', ax=ax)
+                st.pyplot(fig)
+            except Exception: st.caption("Trend data currently processing or empty.")
 
-            # Fixed Driver Analysis
+            # Safe Driver Analysis
             st.subheader("📊 Primary Risk Drivers")
-            # Extract coefficients correctly from potential Pipeline or model
-            coefs = model.named_steps['ridge'].coef_ if hasattr(model, 'named_steps') else model.coef_
-            weights = pd.DataFrame({'Feature': ['Age', 'Hypertension', 'Glucose', 'BMI'], 'Impact': np.abs(coefs[:4])})
-            fig2, ax2 = plt.subplots(figsize=(8, 3))
-            sns.barplot(x='Impact', y='Feature', data=weights, palette='coolwarm')
-            st.pyplot(fig2)
-
-    if col1.button("Predict Heart Risk"): run_clinical_assessment("Heart")
-    if col2.button("Predict Stroke Risk"): run_clinical_assessment("Stroke")
-    if col3.button("Predict Both"): run_clinical_assessment("Combined")
+            try:
+                coefs = model.named_steps['ridge'].coef_ if hasattr(model, 'named_steps') else model.coef_
+                weights = pd.DataFrame({'Feature': ['Age', 'Hypertension', 'Glucose', 'BMI'], 'Impact': np.abs(coefs[:4])})
+                fig2, ax2 = plt.subplots(figsize=(8, 3))
+                sns.barplot(x='Impact', y='Feature', data=weights, palette='coolwarm')
+                st.pyplot(fig2)
+            except Exception: st.caption("Feature drivers currently processing.")
 
     with st.expander("View Saved Patient Records 📝 (Admin)"):
         if os.path.exists('patient_records.csv'):
-            st.dataframe(pd.read_csv('patient_records.csv'))
+            try:
+                st.dataframe(pd.read_csv('patient_records.csv', engine='python'))
+                if st.button("Reset Records File"):
+                    os.remove('patient_records.csv')
+                    st.rerun()
+            except Exception: st.error("File corrupted.")
 
     st.markdown("---")
     st.markdown("<div style='text-align: center; color: #888;'>BOUESTI GROUP 5 Project • March 2026</div>", unsafe_allow_html=True)

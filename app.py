@@ -6,7 +6,7 @@ import os
 from datetime import datetime
 
 # --- Page Config ---
-st.set_page_config(page_title="CVD Risk Predictor", layout="wide", page_icon="❤️")
+st.set_page_config(page_title="CVD Risk Predictor", layout="wide", page_icon="🫀")
 
 # --- Session State for Login ---
 if 'logged_in' not in st.session_state:
@@ -34,7 +34,6 @@ def save_patient_data(patient_name, input_df, prediction, score):
     data_to_save['score'] = score
     data_to_save['timestamp'] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     
-    # Save to CSV (create new file if it doesn't exist, otherwise append)
     if not os.path.exists(file_path):
         data_to_save.to_csv(file_path, index=False)
     else:
@@ -65,7 +64,7 @@ else:
 
     # --- Header ---
     st.title("🫀 Heart Disease & Stroke Risk Predictor")
-    st.markdown("### 🏥 EKITI STATE BOUESTI STUDENT GROUP 5")
+    st.markdown("### 🏥 EKITI STATE BOUESTI STUDENT GROUP 5 CLINIC ")
     st.info("Educational Tool: Predicting Cardiovascular Disease (CVD) risks using Ridge Regression.")
 
     with st.sidebar:
@@ -88,7 +87,8 @@ else:
         bmi = st.number_input("Body Mass Index (BMI)", min_value=10.0, max_value=60.0, value=24.5)
         
         st.header("🚬 Lifestyle")
-        work_type = st.selectbox("Work Type", ["Private", "Self-employed", "Govt_job", "children", "Never_worked"])
+        # Added Student to work_type
+        work_type = st.selectbox("Work Type", ["Private", "Self-employed", "Govt_job", "children", "Never_worked", "Student"])
         smoking_status = st.selectbox("Smoking Status", ["never smoked", "formerly smoked", "smokes", "Unknown"])
 
     def engineer_features(age, glucose, bmi_val):
@@ -101,15 +101,20 @@ else:
     if st.button("Analyze & Save Profile", type="primary"):
         if model and patient_name:
             age_group, glucose_group, bmi_group = engineer_features(age, avg_glucose_level, bmi)
-            input_df = pd.DataFrame({'gender': [gender], 'age': [age], 'hypertension': [hypertension], 'ever_married': [ever_married], 'work_type': [work_type], 'Residence_type': [residence_type], 'avg_glucose_level': [avg_glucose_level], 'bmi': [bmi], 'smoking_status': [smoking_status], 'age_group': [age_group], 'glucose_group': [glucose_group], 'bmi_group': [bmi_group]})
+            input_df = pd.DataFrame({
+                'gender': [gender], 'age': [age], 'hypertension': [hypertension], 
+                'ever_married': [ever_married], 'work_type': [work_type], 
+                'Residence_type': [residence_type], 'avg_glucose_level': [avg_glucose_level], 
+                'bmi': [bmi], 'smoking_status': [smoking_status], 
+                'age_group': [age_group], 'glucose_group': [glucose_group], 'bmi_group': [bmi_group]
+            })
             
+            # 
             prediction = model.predict(input_df)[0]
             score = model.decision_function(input_df)[0] if hasattr(model, 'decision_function') else 0.0
 
             save_patient_data(patient_name, input_df, prediction, score)
             st.success(f"Risk analysis complete and record saved for {patient_name}!")
-            
-            # 
             st.metric("Risk Decision Score", f"{score:.3f}")
         else:
             st.warning("Please ensure the model is loaded and patient name is provided.")
@@ -125,7 +130,7 @@ else:
     st.markdown("---")
     st.markdown("""
         <div style='text-align: center; color: #888; padding: 20px 0;'>
-            <strong>BOUESTI GROUP 5 Project</strong> • EKITI STATE UNIVERSITY TEACHING HOSPITAL<br>
+            <strong>BOUESTI GROUP 5 Project</strong> • 🏥 EKITI STATE BOUESTI STUDENT GROUP 5 CLINIC <br>
             Ikere-Ekiti / Ikere City • March 2026<br>
             <small>Ridge Regression Analysis for Cardiovascular Health</small>
         </div>

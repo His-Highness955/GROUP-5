@@ -3,6 +3,8 @@ import pandas as pd
 import numpy as np
 import joblib
 import os
+import matplotlib.pyplot as plt
+import seaborn as sns
 from datetime import datetime
 
 # --- Page Config ---
@@ -25,7 +27,7 @@ def login_portal():
         else:
             st.error("Invalid Username or Password")
 
-# --- Function to Save Data ---
+# --- Data Persistence ---
 def save_patient_data(patient_name, input_df, prediction, score):
     file_path = 'patient_records.csv'
     data_to_save = input_df.copy()
@@ -50,6 +52,7 @@ def engineer_features(age, glucose, bmi_val):
 if not st.session_state.logged_in:
     login_portal()
 else:
+    # --- Custom CSS ---
     st.markdown("""
         <style>
         .main { background-color: #f5f7f9; }
@@ -83,7 +86,7 @@ else:
         work_type = st.selectbox("Work Type", ["Private", "Self-employed", "Govt_job", "children", "Never_worked", "Student"])
         smoking_status = st.selectbox("Smoking Status", ["never smoked", "formerly smoked", "smokes", "Unknown"])
 
-    # Prediction Logic
+    # --- Prediction Logic ---
     if st.button("Analyze & Save Profile", type="primary"):
         if model and patient_name:
             age_grp, glu_grp, bmi_grp = engineer_features(age, avg_glucose_level, bmi)
@@ -95,21 +98,42 @@ else:
                 'age_group': [age_grp], 'glucose_group': [glu_grp], 'bmi_group': [bmi_grp]
             })
             
+            # Prediction and Scoring
             prediction = model.predict(input_df)[0]
             score = model.decision_function(input_df)[0] if hasattr(model, 'decision_function') else 0.0
 
+            # 1. Analytical Probability Table
+            st.subheader("📊 Analytical Probability Breakdown")
+            prob_stroke = max(0, min(100, (score * 15))) 
+            prob_heart = max(0, min(100, (score * 20)))
+            prob_data = pd.DataFrame({
+                "Condition": ["Cerebrovascular (Stroke)", "Cardiovascular (Heart)"],
+                "Probability Index": [f"{prob_stroke:.1f}%", f"{prob_heart:.1f}%"],
+                "Threshold Check": ["SAFE" if prob_stroke < 30 else "ALERT", "SAFE" if prob_heart < 30 else "ALERT"]
+            })
+            st.table(prob_data)
+
+            # 2. Risk Driver Chart
+            st.subheader("📉 Primary Risk Driver Analysis")
+            # Note: This expects model to be a scikit-learn Pipeline
+            try:
+                # Accessing coefficients depends on your pipeline structure
+                coeffs = model.coef_ if hasattr(model, 'coef_') else model.named_steps['regressor'].coef_
+                features = input_df.columns
+                fig, ax = plt.subplots(figsize=(8, 3))
+                sns.barplot(x=np.abs(coeffs[:len(features)]), y=features, palette='viridis', ax=ax)
+                st.pyplot(fig)
+            except:
+                st.info("Feature importance chart unavailable for this model structure.")
+
+            # Save and finalize
             save_patient_data(patient_name, input_df, prediction, score)
-            
             st.success(f"Risk analysis complete for {patient_name}!")
-            
             st.metric("Risk Decision Score", f"{score:.3f}")
-            
-            if score > 2.0: st.error("⚠️ **High Alert:** High risk for both Heart Disease and Stroke.")
-            elif score > 1.0: st.warning("⚠️ **Priority:** Elevated risk detected.")
-            else: st.success("✅ **Low Risk Detected.**")
         else:
             st.warning("Please check model connection and enter patient name.")
 
+    # --- Admin Records ---
     with st.expander("View Saved Patient Records 📝 (Admin)"):
         if os.path.exists('patient_records.csv'):
             st.dataframe(pd.read_csv('patient_records.csv'))

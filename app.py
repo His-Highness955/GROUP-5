@@ -110,38 +110,56 @@ else:
             if risk_lvl == "CRITICAL": st.error(f"Triage Status: {risk_lvl}")
             elif risk_lvl == "ELEVATED": st.warning(f"Triage Status: {risk_lvl}")
             else: st.success(f"Triage Status: {risk_lvl}")
-
-            # --- Personalized Patient Risk Contribution ---
+                
+# --- Personalized Patient Risk Contribution ---
             st.subheader("📊 Personalized Risk Drivers")
             try:
-                # Automagically find the model step
+                # 1. Automagically find the model and preprocessors
                 model_step = None
+                preprocessor = None
+                
                 if hasattr(model, 'named_steps'):
-                    for name, step in model.named_steps.items():
-                        if hasattr(step, 'coef_'):
-                            model_step = step
-                            break
+                    # Assume the last step is the model, everything before is preprocessor
+                    steps = list(model.named_steps.values())
+                    model_step = steps[-1]
+                    # If there's a preprocessor, combine them
+                    if len(steps) > 1:
+                        preprocessor = model.named_steps.get('preprocessor') or steps[0]
                 elif hasattr(model, 'coef_'):
                     model_step = model
-                
-                if model_step:
+
+                if model_step and hasattr(model_step, 'coef_'):
+                    # 2. Prepare the input data
+                    # We need to transform raw input to the same space the model sees
+                    try:
+                        if preprocessor and hasattr(preprocessor, 'transform'):
+                            transformed_data = preprocessor.transform(input_df)
+                        else:
+                            transformed_data = input_df.select_dtypes(include=[np.number]).values
+                    except:
+                        transformed_data = input_df.select_dtypes(include=[np.number]).values
+
+                    # 3. Calculate Impact: (Transformed Feature) * (Learned Weight)
                     coefs = model_step.coef_.flatten()
+                    
+                    # We map this to the first 4 numerical features
                     features = ['Age', 'Hypertension', 'Glucose', 'BMI']
-                    values = [age, hypertension, avg_glucose_level, bmi]
+                    # Ensure we don't go out of bounds
+                    n_feats = min(len(features), transformed_data.shape[1])
                     
-                    # Calculate Impact
-                    impacts = [values[i] * coefs[i] for i in range(len(features))]
-                    weights = pd.DataFrame({'Feature': features, 'Contribution': impacts})
+                    impacts = [transformed_data[0, i] * coefs[i] for i in range(n_feats)]
+                    weights = pd.DataFrame({'Feature': features[:n_feats], 'Contribution': impacts})
                     
+                    # 4. Plot
                     fig2, ax2 = plt.subplots(figsize=(8, 3))
                     sns.barplot(x='Contribution', y='Feature', data=weights, palette='coolwarm')
                     st.pyplot(fig2)
-                    st.caption("This chart shows how your specific clinical data contributes to your final score.")
+                    st.caption("This shows the impact of your scaled clinical metrics on the risk score.")
                 else:
-                    st.error("Could not find model coefficients in the pipeline.")
+                    st.error("Could not find coefficients or preprocessor in the pipeline.")
             except Exception as e:
-                st.error(f"Debug: Could not calculate personal impact. Error: {e}")
-
+                st.error(f"Debug: Calculation error. {e}")
+                
     with st.expander("View Saved Patient Records 📝 (Admin)"):
         if os.path.exists('patient_records.csv'):
             try:
@@ -154,3 +172,4 @@ else:
 
     st.markdown("---")
     st.markdown("<div style='text-align: center; color: #888;'>BOUESTI GROUP 5 Project • March 2026</div>", unsafe_allow_html=True)
+

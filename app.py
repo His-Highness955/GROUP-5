@@ -135,3 +135,4 @@ else:
 
     st.markdown("---")
     st.markdown("<div style='text-align: center; color: #888;'>BOUESTI GROUP 5 Project • March 2026</div>", unsafe_allow_html=True)
+

@@ -132,9 +132,16 @@ else:
             if os.path.exists('patient_records.csv'):
                 os.remove('patient_records.csv')
                 st.rerun()
-
+ # --- Footer ---
     st.markdown("---")
-    st.markdown("<div style='text-align: center; color: #888;'>BOUESTI GROUP 5 Project • March 2026 • ikere ekiti</div>", unsafe_allow_html=True)
+    st.markdown("""
+        <div style='text-align: center; color: #888; padding: 20px 0;'>
+            <strong>BOUESTI GROUP 5 Project</strong> • 🏥 EKITI STATE BOUESTI STUDENT GROUP 5 CLINIC <br>
+            Ikere-Ekiti / Ikere City • March 2026<br>
+            <small>Ridge Regression Analysis for Cardiovascular Health</small>
+        </div>
+        """, unsafe_allow_html=True)
+
 
 
 

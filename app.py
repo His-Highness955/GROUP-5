@@ -63,8 +63,7 @@ else:
     st.markdown("### 🏥 EKITI STATE BOUESTI STUDENT GROUP 5 CLINIC")
 
     with st.sidebar:
-        if st.button("Logout"): st.session_state.logged_in = False; st.rerun()
-        st.header("👤 Patient Info")
+        if st.header("👤 Patient Info")
         patient_name = st.text_input("Patient Full Name")
         gender = st.selectbox("Gender", ["Male", "Female", "Other"])
         age = st.number_input("Age", 1, 120, 60)
@@ -77,6 +76,7 @@ else:
         st.header("🚬 Lifestyle")
         work_type = st.selectbox("Work Type", ["Private", "Self-employed", "Govt_job", "children", "Never_worked", "Student", "jobless"])
         smoking_status = st.selectbox("Smoking Status", ["never smoked", "formerly smoked", "smokes", "Unknown"])
+        st.button("Logout"): st.session_state.logged_in = False; st.rerun()
 
     st.subheader("Select what you want to predict")
     col1, col2, col3 = st.columns(3)
@@ -134,4 +134,5 @@ else:
 
     st.markdown("---")
     st.markdown("<div style='text-align: center; color: #888;'>BOUESTI GROUP 5 Project • March 2026 • ikere ekiti</div>", unsafe_allow_html=True)
+
 

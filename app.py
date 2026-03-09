@@ -27,24 +27,21 @@ def login_portal():
         else:
             st.error("Invalid Username or Password")
 
-# --- FIXED Data Persistence ---
+# --- Robust Data Persistence ---
 def save_patient_data(patient_name, input_df, pred_type, score, risk_lvl):
     file_path = 'patient_records.csv'
-    # Create copy to avoid modifying the UI input
-    data_to_save = input_df.copy()
     
-    # Assign values as new columns (Fixes the "must pass index" error)
+    # Flatten/process input_df to avoid complex objects or index issues
+    data_to_save = input_df.copy()
     data_to_save['patient_name'] = patient_name
     data_to_save['prediction_type'] = pred_type
     data_to_save['score'] = score
     data_to_save['risk_level'] = risk_lvl
     data_to_save['timestamp'] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     
-    # Append to CSV
-    if not os.path.exists(file_path):
-        data_to_save.to_csv(file_path, index=False)
-    else:
-        data_to_save.to_csv(file_path, mode='a', header=False, index=False)
+    # Save/Append to CSV
+    file_exists = os.path.exists(file_path)
+    data_to_save.to_csv(file_path, mode='a', header=not file_exists, index=False)
 
 # --- Feature Engineering ---
 def engineer_features(age, glucose, bmi_val):
@@ -97,7 +94,6 @@ else:
             'age_group': [age_grp], 'glucose_group': [glu_grp], 'bmi_group': [bmi_grp]
         })
         
-        # Clinical Triage Logic
         raw_score = model.decision_function(input_df)[0]
         multipliers = {"Heart": 0.9, "Stroke": 1.1, "Combined": 1.4}
         adj_score = raw_score * multipliers.get(pred_type, 1.0)
@@ -105,16 +101,13 @@ else:
         
         save_patient_data(patient_name, input_df, pred_type, adj_score, risk_lvl)
         
-        # UI Result Display
         st.metric(f"{pred_type} Risk Score", f"{adj_score:.3f}")
         if risk_lvl == "CRITICAL": st.error(f"Triage Status: {risk_lvl}")
         elif risk_lvl == "ELEVATED": st.warning(f"Triage Status: {risk_lvl}")
         else: st.success(f"Triage Status: {risk_lvl}")
         
-        # Risk Driver Analysis
         st.subheader("📊 Primary Risk Drivers")
         try:
-            # Using model coefficients to show feature impact
             weights = pd.DataFrame({'Feature': ['Age', 'Hypertension', 'Glucose', 'BMI'], 
                                     'Impact': np.abs(model.coef_[:4])})
             fig, ax = plt.subplots(figsize=(8, 3))
@@ -129,9 +122,16 @@ else:
     if col2.button("Predict Stroke Risk"): run_clinical_assessment("Stroke")
     if col3.button("Predict Both"): run_clinical_assessment("Combined")
 
+    # --- Admin Records with Error Handling ---
     with st.expander("View Saved Patient Records 📝 (Admin)"):
         if os.path.exists('patient_records.csv'):
-            st.dataframe(pd.read_csv('patient_records.csv'))
+            try:
+                st.dataframe(pd.read_csv('patient_records.csv'))
+            except Exception as e:
+                st.error("The patient records file is currently inaccessible or corrupted.")
+                if st.button("Reset Records File"):
+                    os.remove('patient_records.csv')
+                    st.rerun()
 
     st.markdown("---")
     st.markdown("<div style='text-align: center; color: #888;'>BOUESTI GROUP 5 Project • March 2026</div>", unsafe_allow_html=True)

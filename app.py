@@ -111,17 +111,6 @@ else:
             elif risk_lvl == "ELEVATED": st.warning(f"Triage Status: {risk_lvl}")
             else: st.success(f"Triage Status: {risk_lvl}")
 
-            st.subheader("📈 Clinical Trend Analysis")
-            try:
-                df = pd.read_csv('patient_records.csv', engine='python')
-                if len(df) > 1:
-                    df['timestamp'] = pd.to_datetime(df['timestamp'])
-                    fig, ax = plt.subplots(figsize=(10, 3))
-                    sns.lineplot(x='timestamp', y='score', hue='prediction_type', data=df, marker='o', ax=ax)
-                    st.pyplot(fig)
-                else:
-                    st.info("Add more patient records to see the trend line.")
-            except Exception: st.error("Database schema mismatch. Please use 'Reset Records' in Admin.")
 
             # --- Robust Primary Risk Drivers ---
             st.subheader("📊 Primary Risk Drivers")
@@ -160,3 +149,4 @@ else:
 
     st.markdown("---")
     st.markdown("<div style='text-align: center; color: #888;'>BOUESTI GROUP 5 Project • March 2026</div>", unsafe_allow_html=True)
+

@@ -78,7 +78,7 @@ else:
         work_type = st.selectbox("Work Type", ["Private", "Self-employed", "Govt_job", "children", "Never_worked", "Student", "jobless"])
         smoking_status = st.selectbox("Smoking Status", ["never smoked", "formerly smoked", "smokes", "Unknown"])
 
-    st.subheader("Select Assessment Type")
+    st.subheader("Select what you want to predict")
     col1, col2, col3 = st.columns(3)
     
     pred_type = None
@@ -161,5 +161,6 @@ else:
                 st.rerun()
 
     st.markdown("---")
-    st.markdown("<div style='text-align: center; color: #888;'>BOUESTI GROUP 5 Project • March 2026</div>", unsafe_allow_html=True)
+    st.markdown("<div style='text-align: center; color: #888;'>BOUESTI GROUP 5 Project • March 2026 • ikere ekiti</div>", unsafe_allow_html=True)
+
 

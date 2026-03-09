@@ -27,11 +27,9 @@ def login_portal():
         else:
             st.error("Invalid Username or Password")
 
-# --- Robust Data Persistence ---
+# --- Data Persistence ---
 def save_patient_data(patient_name, input_df, pred_type, score, risk_lvl):
     file_path = 'patient_records.csv'
-    
-    # Flatten/process input_df to avoid complex objects or index issues
     data_to_save = input_df.copy()
     data_to_save['patient_name'] = patient_name
     data_to_save['prediction_type'] = pred_type
@@ -39,7 +37,6 @@ def save_patient_data(patient_name, input_df, pred_type, score, risk_lvl):
     data_to_save['risk_level'] = risk_lvl
     data_to_save['timestamp'] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     
-    # Save/Append to CSV
     file_exists = os.path.exists(file_path)
     data_to_save.to_csv(file_path, mode='a', header=not file_exists, index=False)
 
@@ -79,7 +76,6 @@ else:
         work_type = st.selectbox("Work Type", ["Private", "Self-employed", "Govt_job", "children", "Never_worked", "Student"])
         smoking_status = st.selectbox("Smoking Status", ["never smoked", "formerly smoked", "smokes", "Unknown"])
 
-    # --- Clinical Assessment Engine ---
     def run_clinical_assessment(pred_type):
         if not model or not patient_name:
             st.warning("Please ensure model is loaded and patient name is provided.")
@@ -101,11 +97,27 @@ else:
         
         save_patient_data(patient_name, input_df, pred_type, adj_score, risk_lvl)
         
+        # --- UI Result Display ---
         st.metric(f"{pred_type} Risk Score", f"{adj_score:.3f}")
         if risk_lvl == "CRITICAL": st.error(f"Triage Status: {risk_lvl}")
         elif risk_lvl == "ELEVATED": st.warning(f"Triage Status: {risk_lvl}")
         else: st.success(f"Triage Status: {risk_lvl}")
+
+        # --- Clinical Trend Analysis ---
+        st.subheader("📈 Clinical Trend Analysis")
+        if os.path.exists('patient_records.csv'):
+            try:
+                df = pd.read_csv('patient_records.csv')
+                if len(df) > 1:
+                    df['timestamp'] = pd.to_datetime(df['timestamp'])
+                    fig, ax = plt.subplots(figsize=(10, 3))
+                    sns.lineplot(x='timestamp', y='score', hue='prediction_type', data=df, marker='o', ax=ax)
+                    ax.set_title("Historical Risk Score Trends")
+                    plt.xticks(rotation=45)
+                    st.pyplot(fig)
+            except: st.caption("Trend data unavailable.")
         
+        # --- Risk Driver Analysis ---
         st.subheader("📊 Primary Risk Drivers")
         try:
             weights = pd.DataFrame({'Feature': ['Age', 'Hypertension', 'Glucose', 'BMI'], 
@@ -115,24 +127,20 @@ else:
             st.pyplot(fig)
         except: st.caption("Feature drivers currently processing.")
 
-    # --- Trigger Buttons ---
     st.subheader("Select Assessment Type")
     col1, col2, col3 = st.columns(3)
     if col1.button("Predict Heart Risk"): run_clinical_assessment("Heart")
     if col2.button("Predict Stroke Risk"): run_clinical_assessment("Stroke")
     if col3.button("Predict Both"): run_clinical_assessment("Combined")
 
-    # --- Admin Records with Error Handling ---
     with st.expander("View Saved Patient Records 📝 (Admin)"):
         if os.path.exists('patient_records.csv'):
             try:
                 st.dataframe(pd.read_csv('patient_records.csv'))
-            except Exception as e:
-                st.error("The patient records file is currently inaccessible or corrupted.")
                 if st.button("Reset Records File"):
                     os.remove('patient_records.csv')
                     st.rerun()
+            except Exception: st.error("File corrupted.")
 
     st.markdown("---")
     st.markdown("<div style='text-align: center; color: #888;'>BOUESTI GROUP 5 Project • March 2026</div>", unsafe_allow_html=True)
-

@@ -98,7 +98,7 @@ else:
         return age_grp, glu_grp, bmi_grp
 
     # --- Prediction Logic ---
-    if st.button("Analyze & Save Profile", type="primary"):
+    if st.button("predict & Save Profile 💾", type="primary"):
         if model and patient_name:
             age_group, glucose_group, bmi_group = engineer_features(age, avg_glucose_level, bmi)
             input_df = pd.DataFrame({
@@ -135,3 +135,4 @@ else:
             <small>Ridge Regression Analysis for Cardiovascular Health</small>
         </div>
         """, unsafe_allow_html=True)
+

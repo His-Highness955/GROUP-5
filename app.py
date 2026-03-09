@@ -60,7 +60,7 @@ else:
     model = joblib.load('final_ridge_cvd_model.pkl') if os.path.exists('final_ridge_cvd_model.pkl') else None
 
     st.title("🫀 GROUP E Risk prediction Portal")
-    st.markdown("### 🏥 EKITI STATE BOUESTI STUDENT GROUP 5 CLINIC")
+    st.markdown("### 🏥 EKITI STATE BOUESTI CIS STUDENT CSC 309 GROUP 5 CLINIC")
 
     with st.sidebar:
         if st.button("Logout"): st.session_state.logged_in = False; st.rerun() 
@@ -135,6 +135,7 @@ else:
 
     st.markdown("---")
     st.markdown("<div style='text-align: center; color: #888;'>BOUESTI GROUP 5 Project • March 2026 • ikere ekiti</div>", unsafe_allow_html=True)
+
 
 
 

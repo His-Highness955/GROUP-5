@@ -127,14 +127,33 @@ else:
                     st.info("Add more patient records to see the trend line.")
             except Exception: st.error("Database schema mismatch. Please use 'Reset Records' in Admin.")
 
+            # --- Fixed Primary Risk Drivers ---
             st.subheader("📊 Primary Risk Drivers")
             try:
-                coefs = model.named_steps['ridge'].coef_ if hasattr(model, 'named_steps') else model.coef_
-                weights = pd.DataFrame({'Feature': ['Age', 'Hypertension', 'Glucose', 'BMI'], 'Impact': np.abs(coefs[:4])})
+                # 1. Access the ridge component
+                # If it's a pipeline, we access via named_steps['ridge']
+                # If it's a raw model, we access via .coef_
+                if hasattr(model, 'named_steps') and 'ridge' in model.named_steps:
+                    ridge_model = model.named_steps['ridge']
+                else:
+                    ridge_model = model
+                
+                # 2. Get coefficients
+                coefs = ridge_model.coef_
+                
+                # 3. Map to feature names (Ensure this matches your training order!)
+                # Note: Adjust the feature names if your model was trained on more columns
+                weights = pd.DataFrame({
+                    'Feature': ['Age', 'Hypertension', 'Glucose', 'BMI'], 
+                    'Impact': np.abs(coefs[:4])
+                })
+                
                 fig2, ax2 = plt.subplots(figsize=(8, 3))
                 sns.barplot(x='Impact', y='Feature', data=weights, palette='coolwarm')
                 st.pyplot(fig2)
-            except Exception: st.caption("Feature drivers currently processing.")
+                
+            except Exception as e:
+                st.error(f"Debug: Could not extract coefficients. Error: {e}")
 
     with st.expander("View Saved Patient Records 📝 (Admin)"):
         if os.path.exists('patient_records.csv'):
@@ -148,3 +167,4 @@ else:
 
     st.markdown("---")
     st.markdown("<div style='text-align: center; color: #888;'>BOUESTI GROUP 5 Project • March 2026</div>", unsafe_allow_html=True)
+

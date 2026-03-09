@@ -2,9 +2,8 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import joblib
-from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import StandardScaler, OneHotEncoder
-from sklearn.compose import ColumnTransformer
+import os
+from datetime import datetime
 
 # --- Page Config ---
 st.set_page_config(page_title="CVD Risk Predictor", layout="wide", page_icon="❤️")
@@ -26,6 +25,21 @@ def login_portal():
         else:
             st.error("Invalid Username or Password")
 
+# --- Function to Save Data ---
+def save_patient_data(patient_name, input_df, prediction, score):
+    file_path = 'patient_records.csv'
+    data_to_save = input_df.copy()
+    data_to_save['patient_name'] = patient_name
+    data_to_save['prediction'] = prediction
+    data_to_save['score'] = score
+    data_to_save['timestamp'] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    
+    # Save to CSV (create new file if it doesn't exist, otherwise append)
+    if not os.path.exists(file_path):
+        data_to_save.to_csv(file_path, index=False)
+    else:
+        data_to_save.to_csv(file_path, mode='a', header=False, index=False)
+
 # --- Main App Content ---
 if not st.session_state.logged_in:
     login_portal()
@@ -44,7 +58,7 @@ else:
         try:
             return joblib.load('final_ridge_cvd_model.pkl')
         except FileNotFoundError:
-            st.error("Model file not found. Please ensure 'final_ridge_cvd_model.pkl' is in the directory.")
+            st.error("Model file not found. Ensure 'final_ridge_cvd_model.pkl' is in the directory.")
             return None
 
     model = load_model()
@@ -54,7 +68,6 @@ else:
     st.markdown("### 🏥 EKITI STATE BOUESTI STUDENT GROUP 5")
     st.info("Educational Tool: Predicting Cardiovascular Disease (CVD) risks using Ridge Regression.")
 
-    # Sidebar Logout Button
     with st.sidebar:
         if st.button("Logout"):
             st.session_state.logged_in = False
@@ -62,7 +75,8 @@ else:
 
     # --- Sidebar Inputs ---
     with st.sidebar:
-        st.header("👤 Patient Demographics")
+        st.header("👤 Patient Info")
+        patient_name = st.text_input("Patient Full Name")
         gender = st.selectbox("Gender", ["Male", "Female", "Other"])
         age = st.number_input("Enter Age", min_value=1, max_value=100, value=45)
         ever_married = st.selectbox("Ever Married?", ["Yes", "No"])
@@ -77,86 +91,42 @@ else:
         work_type = st.selectbox("Work Type", ["Private", "Self-employed", "Govt_job", "children", "Never_worked"])
         smoking_status = st.selectbox("Smoking Status", ["never smoked", "formerly smoked", "smokes", "Unknown"])
 
-    # --- Feature Engineering Function ---
     def engineer_features(age, glucose, bmi_val):
-        if age <= 18: age_grp = 'child'
-        elif age <= 40: age_grp = 'young_adult'
-        elif age <= 60: age_grp = 'middle_age'
-        else: age_grp = 'senior'
-        
-        if glucose <= 100: glu_grp = 'normal'
-        elif glucose <= 126: glu_grp = 'prediabetes'
-        else: glu_grp = 'diabetes'
-        
-        if bmi_val < 18.5: bmi_grp = 'underweight'
-        elif bmi_val < 25: bmi_grp = 'normal'
-        elif bmi_val < 30: bmi_grp = 'overweight'
-        else: bmi_grp = 'obese'
-        
+        age_grp = 'child' if age <= 18 else 'young_adult' if age <= 40 else 'middle_age' if age <= 60 else 'senior'
+        glu_grp = 'normal' if glucose <= 100 else 'prediabetes' if glucose <= 126 else 'diabetes'
+        bmi_grp = 'underweight' if bmi_val < 18.5 else 'normal' if bmi_val < 25 else 'overweight' if bmi_val < 30 else 'obese'
         return age_grp, glu_grp, bmi_grp
 
     # --- Prediction Logic ---
-    if st.button("Analyze Risk Profile", type="primary"):
-        if model:
+    if st.button("Analyze & Save Profile", type="primary"):
+        if model and patient_name:
             age_group, glucose_group, bmi_group = engineer_features(age, avg_glucose_level, bmi)
+            input_df = pd.DataFrame({'gender': [gender], 'age': [age], 'hypertension': [hypertension], 'ever_married': [ever_married], 'work_type': [work_type], 'Residence_type': [residence_type], 'avg_glucose_level': [avg_glucose_level], 'bmi': [bmi], 'smoking_status': [smoking_status], 'age_group': [age_group], 'glucose_group': [glucose_group], 'bmi_group': [bmi_group]})
             
-            input_df = pd.DataFrame({
-                'gender': [gender],
-                'age': [age],
-                'hypertension': [hypertension],
-                'ever_married': [ever_married],
-                'work_type': [work_type],
-                'Residence_type': [residence_type],
-                'avg_glucose_level': [avg_glucose_level],
-                'bmi': [bmi],
-                'smoking_status': [smoking_status],
-                'age_group': [age_group],
-                'glucose_group': [glucose_group],
-                'bmi_group': [bmi_group]
-            })
-
-            # Inference Pipeline
             prediction = model.predict(input_df)[0]
-            try:
-                score = model.decision_function(input_df)[0]
-            except:
-                score = 0.0
+            score = model.decision_function(input_df)[0] if hasattr(model, 'decision_function') else 0.0
 
-            st.subheader("Results Analysis")
-            # 
-            res_col1, res_col2 = st.columns(2)
+            save_patient_data(patient_name, input_df, prediction, score)
+            st.success(f"Risk analysis complete and record saved for {patient_name}!")
             
-            with res_col1:
-                st.metric("Risk Decision Score", f"{score:.3f}")
-                if prediction == 0:
-                    st.success("✅ **Low Risk Detected**")
-                else:
-                    st.error("⚠️ **Elevated Risk Detected**")
-
-            with res_col2:
-                if prediction == 0:
-                    st.write("The model suggests the patient is currently below the threshold for clinical intervention.")
-                elif score > 2.0:
-                    st.warning("**High Alert:** High risk for both Heart Disease and Stroke.")
-                elif score > 1.0:
-                    st.warning("**Heart Priority:** Signal is stronger for Heart Disease.")
-                else:
-                    st.warning("**Stroke Priority:** Signal is stronger for Cerebrovascular issues.")
-
-            with st.expander("View Processed Feature Data"):
-                st.table(input_df)
+            # 
+            st.metric("Risk Decision Score", f"{score:.3f}")
         else:
-            st.warning("Please link your model to proceed.")
+            st.warning("Please ensure the model is loaded and patient name is provided.")
+
+    # --- Admin Records ---
+    with st.expander("View Saved Patient Records (Admin)"):
+        if os.path.exists('patient_records.csv'):
+            st.dataframe(pd.read_csv('patient_records.csv'))
+        else:
+            st.write("No patient records saved yet.")
 
     # --- Footer ---
     st.markdown("---")
-    st.markdown(
-        """
+    st.markdown("""
         <div style='text-align: center; color: #888; padding: 20px 0;'>
             <strong>BOUESTI GROUP 5 Project</strong> • EKITI STATE UNIVERSITY TEACHING HOSPITAL<br>
             Ikere-Ekiti / Ikere City • March 2026<br>
             <small>Ridge Regression Analysis for Cardiovascular Health</small>
         </div>
-        """,
-        unsafe_allow_html=True
-    )
+        """, unsafe_allow_html=True)

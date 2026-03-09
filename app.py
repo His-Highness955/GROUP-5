@@ -10,14 +10,13 @@ from datetime import datetime
 # --- Page Config ---
 st.set_page_config(page_title="CVD Clinical Portal", layout="wide", page_icon="🫀")
 
-# --- Session State for Login ---
+# --- Session State ---
 if 'logged_in' not in st.session_state:
     st.session_state.logged_in = False
 
 # --- Login Portal Logic ---
 def login_portal():
     st.title("🔐 Secure Access")
-    ##GROUP 5 CLINIC
     st.info("Please log in to access the CVD Risk Predictor.")
     username = st.text_input("Username")
     password = st.text_input("Password", type="password")
@@ -28,14 +27,20 @@ def login_portal():
         else:
             st.error("Invalid Username or Password")
 
-# --- Data Persistence ---
+# --- FIXED Data Persistence ---
 def save_patient_data(patient_name, input_df, pred_type, score, risk_lvl):
     file_path = 'patient_records.csv'
+    # Create copy to avoid modifying the UI input
     data_to_save = input_df.copy()
-    data_to_save.update({'patient_name': patient_name, 'prediction_type': pred_type, 
-                         'score': score, 'risk_level': risk_lvl, 
-                         'timestamp': datetime.now().strftime("%Y-%m-%d %H:%M:%S")})
     
+    # Assign values as new columns (Fixes the "must pass index" error)
+    data_to_save['patient_name'] = patient_name
+    data_to_save['prediction_type'] = pred_type
+    data_to_save['score'] = score
+    data_to_save['risk_level'] = risk_lvl
+    data_to_save['timestamp'] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    
+    # Append to CSV
     if not os.path.exists(file_path):
         data_to_save.to_csv(file_path, index=False)
     else:
@@ -106,9 +111,10 @@ else:
         elif risk_lvl == "ELEVATED": st.warning(f"Triage Status: {risk_lvl}")
         else: st.success(f"Triage Status: {risk_lvl}")
         
-        # Feature Importance: Ridge Explanation
+        # Risk Driver Analysis
         st.subheader("📊 Primary Risk Drivers")
         try:
+            # Using model coefficients to show feature impact
             weights = pd.DataFrame({'Feature': ['Age', 'Hypertension', 'Glucose', 'BMI'], 
                                     'Impact': np.abs(model.coef_[:4])})
             fig, ax = plt.subplots(figsize=(8, 3))

@@ -111,36 +111,34 @@ else:
             elif risk_lvl == "ELEVATED": st.warning(f"Triage Status: {risk_lvl}")
             else: st.success(f"Triage Status: {risk_lvl}")
 
-
-# --- Personalized Patient Risk Contribution ---
+            # --- Personalized Patient Risk Contribution ---
             st.subheader("📊 Personalized Risk Drivers")
             try:
-                # 1. Get the patient's actual input values
-                # We need to scale these values if your pipeline includes a scaler
-                # For simplicity, we show the relative contribution (Value * Coefficient)
+                # Automagically find the model step
+                model_step = None
                 if hasattr(model, 'named_steps'):
-                    scaler = model.named_steps.get('scaler') # Adjust if your scaler name is different
-                    ridge = model.named_steps.get('ridge')
+                    for name, step in model.named_steps.items():
+                        if hasattr(step, 'coef_'):
+                            model_step = step
+                            break
+                elif hasattr(model, 'coef_'):
+                    model_step = model
+                
+                if model_step:
+                    coefs = model_step.coef_.flatten()
+                    features = ['Age', 'Hypertension', 'Glucose', 'BMI']
+                    values = [age, hypertension, avg_glucose_level, bmi]
+                    
+                    # Calculate Impact
+                    impacts = [values[i] * coefs[i] for i in range(len(features))]
+                    weights = pd.DataFrame({'Feature': features, 'Contribution': impacts})
+                    
+                    fig2, ax2 = plt.subplots(figsize=(8, 3))
+                    sns.barplot(x='Contribution', y='Feature', data=weights, palette='coolwarm')
+                    st.pyplot(fig2)
+                    st.caption("This chart shows how your specific clinical data contributes to your final score.")
                 else:
-                    ridge = model
-                    scaler = None
-
-                # Calculate individual impact (feature value * weight)
-                # Note: This assumes numerical features. 
-                features = ['age', 'hypertension', 'avg_glucose_level', 'bmi']
-                values = [age, hypertension, avg_glucose_level, bmi]
-                coefs = ridge.coef_[:4] # Match the features above
-                
-                impacts = [v * c for v, c in zip(values, coefs)]
-                
-                weights = pd.DataFrame({'Feature': ['Age', 'Hypertension', 'Glucose', 'BMI'], 
-                                        'Contribution': impacts})
-                
-                fig2, ax2 = plt.subplots(figsize=(8, 3))
-                sns.barplot(x='Contribution', y='Feature', data=weights, palette='coolwarm')
-                st.pyplot(fig2)
-                st.caption("This chart shows how your specific clinical data contributes to your final score.")
-                
+                    st.error("Could not find model coefficients in the pipeline.")
             except Exception as e:
                 st.error(f"Debug: Could not calculate personal impact. Error: {e}")
 
@@ -156,5 +154,3 @@ else:
 
     st.markdown("---")
     st.markdown("<div style='text-align: center; color: #888;'>BOUESTI GROUP 5 Project • March 2026</div>", unsafe_allow_html=True)
-
-

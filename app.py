@@ -27,17 +27,28 @@ def login_portal():
         else:
             st.error("Invalid Username or Password")
 
-# --- Data Persistence ---
+# --- Robust Data Persistence ---
 def save_patient_data(patient_name, input_df, pred_type, score, risk_lvl):
     file_path = 'patient_records.csv'
-    data_to_save = input_df.copy()
-    data_to_save['patient_name'] = patient_name
-    data_to_save['prediction_type'] = pred_type
-    data_to_save['score'] = score
-    data_to_save['risk_level'] = risk_lvl
-    data_to_save['timestamp'] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    
+    # Create the record row
+    new_record = input_df.copy()
+    new_record['patient_name'] = patient_name
+    new_record['prediction_type'] = pred_type
+    new_record['score'] = score
+    new_record['risk_level'] = risk_lvl
+    new_record['timestamp'] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    
+    # Define exact columns to prevent field mismatch errors
+    cols = ['gender', 'age', 'hypertension', 'ever_married', 'work_type', 
+            'Residence_type', 'avg_glucose_level', 'bmi', 'smoking_status', 
+            'age_group', 'glucose_group', 'bmi_group', 'patient_name', 
+            'prediction_type', 'score', 'risk_level', 'timestamp']
+    
+    new_record = new_record[cols]
+    
     file_exists = os.path.exists(file_path)
-    data_to_save.to_csv(file_path, mode='a', header=not file_exists, index=False)
+    new_record.to_csv(file_path, mode='a', header=not file_exists, index=False)
 
 # --- Feature Engineering ---
 def engineer_features(age, glucose, bmi_val):
@@ -71,11 +82,9 @@ else:
         work_type = st.selectbox("Work Type", ["Private", "Self-employed", "Govt_job", "children", "Never_worked", "Student"])
         smoking_status = st.selectbox("Smoking Status", ["never smoked", "formerly smoked", "smokes", "Unknown"])
 
-    # UI: Buttons
     st.subheader("Select Assessment Type")
     col1, col2, col3 = st.columns(3)
     
-    # Logic to handle buttons without passing them into functions
     pred_type = None
     if col1.button("Predict Heart Risk"): pred_type = "Heart"
     if col2.button("Predict Stroke Risk"): pred_type = "Stroke"
@@ -85,7 +94,6 @@ else:
         if not model or not patient_name:
             st.warning("Please ensure model is loaded and patient name is provided.")
         else:
-            # Prediction Engine
             age_grp, glu_grp, bmi_grp = engineer_features(age, avg_glucose_level, bmi)
             input_df = pd.DataFrame({
                 'gender': [gender], 'age': [age], 'hypertension': [hypertension], 
@@ -107,26 +115,18 @@ else:
             elif risk_lvl == "ELEVATED": st.warning(f"Triage Status: {risk_lvl}")
             else: st.success(f"Triage Status: {risk_lvl}")
 
-           # --- Robust Trend Analysis ---
             st.subheader("📈 Clinical Trend Analysis")
             try:
                 df = pd.read_csv('patient_records.csv', engine='python')
-                if len(df) >= 1:
+                if len(df) > 1:
                     df['timestamp'] = pd.to_datetime(df['timestamp'])
-                    
-                    # Ensure we have enough data points to plot a line
-                    if len(df) > 1:
-                        fig, ax = plt.subplots(figsize=(10, 3))
-                        sns.lineplot(x='timestamp', y='score', hue='prediction_type', data=df, marker='o', ax=ax)
-                        st.pyplot(fig)
-                    else:
-                        st.write("Keep adding patients! We need more than one record to visualize trends.")
+                    fig, ax = plt.subplots(figsize=(10, 3))
+                    sns.lineplot(x='timestamp', y='score', hue='prediction_type', data=df, marker='o', ax=ax)
+                    st.pyplot(fig)
                 else:
-                    st.caption("No records found in the database.")
-            except Exception as e:
-                st.error(f"Debug: {e}") # This will show you exactly why it's failing
-                
-            # Safe Driver Analysis
+                    st.info("Add more patient records to see the trend line.")
+            except Exception: st.error("Database schema mismatch. Please use 'Reset Records' in Admin.")
+
             st.subheader("📊 Primary Risk Drivers")
             try:
                 coefs = model.named_steps['ridge'].coef_ if hasattr(model, 'named_steps') else model.coef_
@@ -140,11 +140,11 @@ else:
         if os.path.exists('patient_records.csv'):
             try:
                 st.dataframe(pd.read_csv('patient_records.csv', engine='python'))
-                if st.button("Reset Records File"):
-                    os.remove('patient_records.csv')
-                    st.rerun()
-            except Exception: st.error("File corrupted.")
+            except Exception: st.error("File is corrupted.")
+        if st.button("⚠️ Reset Records File"):
+            if os.path.exists('patient_records.csv'):
+                os.remove('patient_records.csv')
+                st.rerun()
 
     st.markdown("---")
     st.markdown("<div style='text-align: center; color: #888;'>BOUESTI GROUP 5 Project • March 2026</div>", unsafe_allow_html=True)
-

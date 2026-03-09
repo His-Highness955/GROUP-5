@@ -67,13 +67,13 @@ else:
         st.header("👤 Patient Info")
         patient_name = st.text_input("Patient Full Name")
         gender = st.selectbox("Gender", ["Male", "Female", "Other"])
-        age = st.number_input("Age", 1, 100, 45)
+        age = st.number_input("Age", 1, 120, 60)
         ever_married = st.selectbox("Ever Married?", ["Yes", "No"])
         residence_type = st.selectbox("Residence Type", ["Urban", "Rural"])
         st.header("🏥 Clinical Data")
         hypertension = st.radio("Hypertension History?", [0, 1], format_func=lambda x: "Yes" if x==1 else "No")
         avg_glucose_level = st.number_input("Avg Glucose Level (mg/dL)", 50.0, 300.0, 105.0)
-        bmi = st.number_input("Body Mass Index (BMI)", 10.0, 60.0, 24.5)
+        bmi = st.number_input("Body Mass Index (BMI)", 10.0, 70.0, 24.5)
         st.header("🚬 Lifestyle")
         work_type = st.selectbox("Work Type", ["Private", "Self-employed", "Govt_job", "children", "Never_worked", "Student", "jobless"])
         smoking_status = st.selectbox("Smoking Status", ["never smoked", "formerly smoked", "smokes", "Unknown"])
@@ -99,22 +99,32 @@ else:
                 'age_group': [age_grp], 'glucose_group': [glu_grp], 'bmi_group': [bmi_grp]
             })
             
+            # --- Predictions and Probability ---
             raw_score = model.decision_function(input_df)[0]
             multipliers = {"Heart": 0.9, "Stroke": 1.1, "Combined": 1.4}
             adj_score = raw_score * multipliers.get(pred_type, 1.0)
-            risk_lvl = "CRITICAL" if adj_score > 2.0 else "ELEVATED" if adj_score > 1.0 else "STABLE"
+            
+            # Convert raw score to percentage probability
+            probability = 1 / (1 + np.exp(-adj_score))
+            risk_pct = probability * 100
+            
+            risk_lvl = "CRITICAL" if risk_pct > 75 else "ELEVATED" if risk_pct > 50 else "STABLE"
             save_patient_data(patient_name, input_df, pred_type, adj_score, risk_lvl)
             
             st.divider()
-            st.metric(f"{pred_type} Risk Score", f"{adj_score:.3f}")
-            if risk_lvl == "CRITICAL": st.error(f"Status: {risk_lvl}")
-            elif risk_lvl == "ELEVATED": st.warning(f"Status: {risk_lvl}")
-            else: st.success(f"Status: {risk_lvl}")
+            
+            # Display results
+            col_m1, col_m2 = st.columns(2)
+            col_m1.metric(f"{pred_type} Risk Score", f"{adj_score:.3f}")
+            col_m2.metric(f"Probability of Risk", f"{risk_pct:.1f}%")
+            
+            if risk_lvl == "CRITICAL": st.error(f"Status: {risk_lvl} - Immediate Consultation Required")
+            elif risk_lvl == "ELEVATED": st.warning(f"Status: {risk_lvl} - Lifestyle Intervention Advised")
+            else: st.success(f"Status: {risk_lvl} - Maintenance Recommended")
 
             # --- Personalized Patient Risk Contribution ---
             st.subheader("📊 Personalized Risk Drivers")
             try:
-                # Automagically find the model step and preprocessor
                 model_step = None
                 preprocessor = None
                 
@@ -127,14 +137,13 @@ else:
                     model_step = model
 
                 if model_step and hasattr(model_step, 'coef_'):
-                    # Transform input to match model space
+                    # Apply transformation to match model's expected scale
                     if preprocessor and hasattr(preprocessor, 'transform'):
                         transformed_data = preprocessor.transform(input_df)
                     else:
                         transformed_data = input_df.select_dtypes(include=[np.number]).values
 
                     coefs = model_step.coef_.flatten()
-                    # Mapping numerical inputs
                     features = ['Age', 'Hypertension', 'Glucose', 'BMI']
                     n_feats = min(len(features), transformed_data.shape[1])
                     
@@ -162,5 +171,3 @@ else:
 
     st.markdown("---")
     st.markdown("<div style='text-align: center; color: #888;'>BOUESTI GROUP 5 Project • March 2026 • ikere ekiti</div>", unsafe_allow_html=True)
-
-

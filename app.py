@@ -39,11 +39,17 @@ def save_patient_data(patient_name, input_df, prediction, score):
     else:
         data_to_save.to_csv(file_path, mode='a', header=False, index=False)
 
+# --- Feature Engineering ---
+def engineer_features(age, glucose, bmi_val):
+    age_grp = 'child' if age <= 18 else 'young_adult' if age <= 40 else 'middle_age' if age <= 60 else 'senior'
+    glu_grp = 'normal' if glucose <= 100 else 'prediabetes' if glucose <= 126 else 'diabetes'
+    bmi_grp = 'underweight' if bmi_val < 18.5 else 'normal' if bmi_val < 25 else 'overweight' if bmi_val < 30 else 'obese'
+    return age_grp, glu_grp, bmi_grp
+
 # --- Main App Content ---
 if not st.session_state.logged_in:
     login_portal()
 else:
-    # --- Custom CSS ---
     st.markdown("""
         <style>
         .main { background-color: #f5f7f9; }
@@ -51,29 +57,16 @@ else:
         </style>
         """, unsafe_allow_html=True)
 
-    # --- Model Loading ---
-    @st.cache_resource
-    def load_model():
-        try:
-            return joblib.load('final_ridge_cvd_model.pkl')
-        except FileNotFoundError:
-            st.error("Model file not found. Ensure 'final_ridge_cvd_model.pkl' is in the directory.")
-            return None
+    model = joblib.load('final_ridge_cvd_model.pkl') if os.path.exists('final_ridge_cvd_model.pkl') else None
 
-    model = load_model()
-
-    # --- Header ---
     st.title("🫀 Heart Disease & Stroke Risk Predictor")
-    st.markdown("### 🏥 EKITI STATE BOUESTI STUDENT GROUP 5 CLINIC ")
-    st.info("Educational Tool: Predicting Cardiovascular Disease (CVD) risks using Ridge Regression.")
+    st.markdown("### 🏥 EKITI STATE BOUESTI STUDENT GROUP 5 CLINIC")
 
     with st.sidebar:
         if st.button("Logout"):
             st.session_state.logged_in = False
             st.rerun()
-
-    # --- Sidebar Inputs ---
-    with st.sidebar:
+        
         st.header("👤 Patient Info")
         patient_name = st.text_input("Patient Full Name")
         gender = st.selectbox("Gender", ["Male", "Female", "Other"])
@@ -83,56 +76,46 @@ else:
         
         st.header("🏥 Clinical Data")
         hypertension = st.radio("Hypertension History?", [0, 1], format_func=lambda x: "Yes" if x==1 else "No")
-        avg_glucose_level = st.number_input("Avg Glucose Level (mg/dL)", min_value=50.0, max_value=300.0, value=105.0)
-        bmi = st.number_input("Body Mass Index (BMI)", min_value=10.0, max_value=60.0, value=24.5)
+        avg_glucose_level = st.number_input("Avg Glucose Level (mg/dL)", 50.0, 300.0, 105.0)
+        bmi = st.number_input("Body Mass Index (BMI)", 10.0, 60.0, 24.5)
         
         st.header("🚬 Lifestyle")
-        # Added Student to work_type
         work_type = st.selectbox("Work Type", ["Private", "Self-employed", "Govt_job", "children", "Never_worked", "Student"])
         smoking_status = st.selectbox("Smoking Status", ["never smoked", "formerly smoked", "smokes", "Unknown"])
 
-    def engineer_features(age, glucose, bmi_val):
-        age_grp = 'child' if age <= 18 else 'young_adult' if age <= 40 else 'middle_age' if age <= 60 else 'senior'
-        glu_grp = 'normal' if glucose <= 100 else 'prediabetes' if glucose <= 126 else 'diabetes'
-        bmi_grp = 'underweight' if bmi_val < 18.5 else 'normal' if bmi_val < 25 else 'overweight' if bmi_val < 30 else 'obese'
-        return age_grp, glu_grp, bmi_grp
-
-    # --- Prediction Logic ---
+    # Prediction Logic
     if st.button("Analyze & Save Profile", type="primary"):
         if model and patient_name:
-            age_group, glucose_group, bmi_group = engineer_features(age, avg_glucose_level, bmi)
+            age_grp, glu_grp, bmi_grp = engineer_features(age, avg_glucose_level, bmi)
             input_df = pd.DataFrame({
                 'gender': [gender], 'age': [age], 'hypertension': [hypertension], 
                 'ever_married': [ever_married], 'work_type': [work_type], 
                 'Residence_type': [residence_type], 'avg_glucose_level': [avg_glucose_level], 
                 'bmi': [bmi], 'smoking_status': [smoking_status], 
-                'age_group': [age_group], 'glucose_group': [glucose_group], 'bmi_group': [bmi_group]
+                'age_group': [age_grp], 'glucose_group': [glu_grp], 'bmi_group': [bmi_grp]
             })
             
-            # 
             prediction = model.predict(input_df)[0]
             score = model.decision_function(input_df)[0] if hasattr(model, 'decision_function') else 0.0
 
             save_patient_data(patient_name, input_df, prediction, score)
-            st.success(f"Risk analysis complete and record saved 🗃️ for {patient_name}!")
+            
+            st.success(f"Risk analysis complete for {patient_name}!")
+            
             st.metric("Risk Decision Score", f"{score:.3f}")
+            
+            if score > 2.0: st.error("⚠️ **High Alert:** High risk for both Heart Disease and Stroke.")
+            elif score > 1.0: st.warning("⚠️ **Priority:** Elevated risk detected.")
+            else: st.success("✅ **Low Risk Detected.**")
         else:
-            st.warning("Please ensure the model is loaded and patient name is provided.")
+            st.warning("Please check model connection and enter patient name.")
 
-    # --- Admin Records ---
     with st.expander("View Saved Patient Records 📝 (Admin)"):
         if os.path.exists('patient_records.csv'):
             st.dataframe(pd.read_csv('patient_records.csv'))
+            st.download_button("Download Records", data=open('patient_records.csv', 'rb'), file_name='patient_records.csv')
         else:
-            st.write("No patient records saved yet.")
+            st.write("No records found.")
 
-    # --- Footer ---
     st.markdown("---")
-    st.markdown("""
-        <div style='text-align: center; color: #888; padding: 20px 0;'>
-            <strong>BOUESTI GROUP 5 Project</strong> • 🏥 EKITI STATE BOUESTI STUDENT GROUP 5 CLINIC <br>
-            Ikere-Ekiti / Ikere City • March 2026<br>
-            <small>Ridge Regression Analysis for Cardiovascular Health</small>
-        </div>
-        """, unsafe_allow_html=True)
-
+    st.markdown("<div style='text-align: center; color: #888;'>BOUESTI GROUP 5 Project • March 2026</div>", unsafe_allow_html=True)

@@ -20,7 +20,6 @@ def login_portal():
     username = st.text_input("Username")
     password = st.text_input("Password", type="password")
     if st.button("Login"):
-        # Set your credentials here
         if username == "team 5" and password == "bouesti2026":
             st.session_state.logged_in = True
             st.rerun()
@@ -31,7 +30,7 @@ def login_portal():
 if not st.session_state.logged_in:
     login_portal()
 else:
-    # --- Custom CSS for BOUESTI Branding ---
+    # --- Custom CSS ---
     st.markdown("""
         <style>
         .main { background-color: #f5f7f9; }
@@ -52,6 +51,7 @@ else:
 
     # --- Header ---
     st.title("🫀 Heart Disease & Stroke Risk Predictor")
+    st.markdown("### 🏥 EKITI STATE BOUESTI STUDENT GROUP 5")
     st.info("Educational Tool: Predicting Cardiovascular Disease (CVD) risks using Ridge Regression.")
 
     # Sidebar Logout Button
@@ -64,14 +64,14 @@ else:
     with st.sidebar:
         st.header("👤 Patient Demographics")
         gender = st.selectbox("Gender", ["Male", "Female", "Other"])
-        age = st.slider("Age", 1, 100, 45)
+        age = st.number_input("Enter Age", min_value=1, max_value=100, value=45)
         ever_married = st.selectbox("Ever Married?", ["Yes", "No"])
         residence_type = st.selectbox("Residence Type", ["Urban", "Rural"])
         
         st.header("🏥 Clinical Data")
         hypertension = st.radio("Hypertension History?", [0, 1], format_func=lambda x: "Yes" if x==1 else "No")
-        avg_glucose_level = st.number_input("Avg Glucose Level (mg/dL)", 50.0, 300.0, 105.0)
-        bmi = st.number_input("Body Mass Index (BMI)", 10.0, 60.0, 24.5)
+        avg_glucose_level = st.number_input("Avg Glucose Level (mg/dL)", min_value=50.0, max_value=300.0, value=105.0)
+        bmi = st.number_input("Body Mass Index (BMI)", min_value=10.0, max_value=60.0, value=24.5)
         
         st.header("🚬 Lifestyle")
         work_type = st.selectbox("Work Type", ["Private", "Self-employed", "Govt_job", "children", "Never_worked"])
@@ -115,6 +115,7 @@ else:
                 'bmi_group': [bmi_group]
             })
 
+            # Inference Pipeline
             prediction = model.predict(input_df)[0]
             try:
                 score = model.decision_function(input_df)[0]
@@ -122,6 +123,7 @@ else:
                 score = 0.0
 
             st.subheader("Results Analysis")
+            # 
             res_col1, res_col2 = st.columns(2)
             
             with res_col1:
@@ -151,12 +153,10 @@ else:
     st.markdown(
         """
         <div style='text-align: center; color: #888; padding: 20px 0;'>
-            <strong>BOUESTI Engineering Project</strong> • Ikere-Ekiti / ikere city • March 2026<br>
+            <strong>BOUESTI GROUP 5 Project</strong> • EKITI STATE UNIVERSITY TEACHING HOSPITAL<br>
+            Ikere-Ekiti / Ikere City • March 2026<br>
             <small>Ridge Regression Analysis for Cardiovascular Health</small>
         </div>
         """,
         unsafe_allow_html=True
     )
-
-
-

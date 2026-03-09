@@ -107,16 +107,25 @@ else:
             elif risk_lvl == "ELEVATED": st.warning(f"Triage Status: {risk_lvl}")
             else: st.success(f"Triage Status: {risk_lvl}")
 
-            # Safe Trend Analysis
+           # --- Robust Trend Analysis ---
             st.subheader("📈 Clinical Trend Analysis")
             try:
                 df = pd.read_csv('patient_records.csv', engine='python')
-                df['timestamp'] = pd.to_datetime(df['timestamp'])
-                fig, ax = plt.subplots(figsize=(10, 3))
-                sns.lineplot(x='timestamp', y='score', hue='prediction_type', data=df, marker='o', ax=ax)
-                st.pyplot(fig)
-            except Exception: st.caption("Trend data currently processing or empty.")
-
+                if len(df) >= 1:
+                    df['timestamp'] = pd.to_datetime(df['timestamp'])
+                    
+                    # Ensure we have enough data points to plot a line
+                    if len(df) > 1:
+                        fig, ax = plt.subplots(figsize=(10, 3))
+                        sns.lineplot(x='timestamp', y='score', hue='prediction_type', data=df, marker='o', ax=ax)
+                        st.pyplot(fig)
+                    else:
+                        st.write("Keep adding patients! We need more than one record to visualize trends.")
+                else:
+                    st.caption("No records found in the database.")
+            except Exception as e:
+                st.error(f"Debug: {e}") # This will show you exactly why it's failing
+                
             # Safe Driver Analysis
             st.subheader("📊 Primary Risk Drivers")
             try:
@@ -138,3 +147,4 @@ else:
 
     st.markdown("---")
     st.markdown("<div style='text-align: center; color: #888;'>BOUESTI GROUP 5 Project • March 2026</div>", unsafe_allow_html=True)
+

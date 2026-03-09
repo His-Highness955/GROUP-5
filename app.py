@@ -8,7 +8,7 @@ import seaborn as sns
 from datetime import datetime
 
 # --- Page Config ---
-st.set_page_config(page_title="CVD Clinical Portal", layout="wide", page_icon="🫀")
+st.set_page_config(page_title="Group 5 Clinical Portal", layout="wide", page_icon="🫀")
 
 # --- Session State ---
 if 'logged_in' not in st.session_state:
@@ -107,9 +107,9 @@ else:
             
             st.divider()
             st.metric(f"{pred_type} Risk Score", f"{adj_score:.3f}")
-            if risk_lvl == "CRITICAL": st.error(f"Triage Status: {risk_lvl}")
-            elif risk_lvl == "ELEVATED": st.warning(f"Triage Status: {risk_lvl}")
-            else: st.success(f"Triage Status: {risk_lvl}")
+            if risk_lvl == "CRITICAL": st.error(f"Status: {risk_lvl}")
+            elif risk_lvl == "ELEVATED": st.warning(f"Status: {risk_lvl}")
+            else: st.success(f"Status: {risk_lvl}")
 
             # --- Personalized Patient Risk Contribution ---
             st.subheader("📊 Personalized Risk Drivers")
@@ -162,3 +162,4 @@ else:
 
     st.markdown("---")
     st.markdown("<div style='text-align: center; color: #888;'>BOUESTI GROUP 5 Project • March 2026</div>", unsafe_allow_html=True)
+

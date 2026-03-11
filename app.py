@@ -165,3 +165,7 @@ else:
             if st.button("Clear All Records"):
                 os.remove('patient_records.csv')
                 st.rerun()
+
+  st.markdown("---")
+
+    st.markdown("<div style='text-align: center; color: #888;'>BOUESTI GROUP 5 Project • March 2026 • Ikere-Ekiti</div>", unsafe_allow_html=True)

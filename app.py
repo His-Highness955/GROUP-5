@@ -32,6 +32,24 @@ def engineer_features(age, glucose, bmi_val, hypertension, diabetes):
     bmi_grp = 'underweight' if bmi_val < 18.5 else 'normal' if bmi_val < 25 else 'overweight' if bmi_val < 30 else 'obese'
     glu_grp = 'normal' if glucose < 100 else 'prediabetes' if glucose < 126 else 'diabetes'
     return age_grp, glu_grp, bmi_grp
+
+# --- UI Components ---
+def login_portal():
+    # CSS for watermark
+    st.markdown(
+        """
+        <style>
+        .stApp {
+            background: linear-gradient(rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.9)), 
+                        url("ccoeikere.png");
+            background-size: contain;
+            background-position: center;
+            background-repeat: no-repeat;
+        }
+        </style>
+        """,
+        unsafe_allow_html=True
+    )
     
     st.markdown("""
         <div style='text-align: center;'>
@@ -43,8 +61,8 @@ def engineer_features(age, glucose, bmi_val, hypertension, diabetes):
     
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
-        st.info("Log in with this credentials. username: team 5, password: bouesti2026")
-        username = st.text_input("Username", value="username")
+        st.info("Log in with your Team 5 credentials.")
+        username = st.text_input("Username", value="team 5")
         password = st.text_input("Password", type="password")
         
         if st.button("Login 🔐"):
@@ -70,7 +88,7 @@ else:
         if st.button("Logout"): 
             st.session_state.logged_in = False
             st.rerun()
-        st.header("👤 Patient Info 📝")
+        st.header("👤 Patient Info")
         patient_name = st.text_input("Patient Full Name")
         gender = st.selectbox("Gender", ["Male", "Female", "Other"])
         age = st.number_input("Age", 0, 120, 45)
@@ -173,5 +191,3 @@ else:
 
     st.markdown("---")
     st.markdown("<div style='text-align: center; color: #888;'>• BOUESTI CIS student GROUP 5 Project • </br> An assignment given by MRS T.O. ADEFEHINTI • March 2026 • Ikere-Ekiti</div>", unsafe_allow_html=True)
-
-

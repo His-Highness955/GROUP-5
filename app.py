@@ -53,7 +53,8 @@ if not st.session_state.logged_in:
 else:
     model = joblib.load('final_ridge_cvd_model.pkl') if os.path.exists('final_ridge_cvd_model.pkl') else None
     
-    st.title("🫀 GROUP E Heart/Stroke Risk Portal")
+    st.title("🫀 GROUP E HEART OR STROKE Risk prediction Portal")
+    st.markdown("### 🏥 EKITI STATE BOUESTI CIS STUDENT GROUP 5 CLINIC")
     
     with st.sidebar:
         if st.button("Logout"): st.session_state.logged_in = False; st.rerun()
@@ -68,13 +69,21 @@ else:
         systolic_bp = st.number_input("Systolic BP (mmHg)", 70, 250, 120)
         diastolic_bp = st.number_input("Diastolic BP (mmHg)", 40, 150, 80)
         diabetes = st.radio("Diabetes?", [0, 1], format_func=lambda x: "Yes" if x==1 else "No")
+        dyslipidemia = st.radio("Dyslipidemia?", [0, 1], format_func=lambda x: "Yes" if x==1 else "No")
         avg_glucose_level = st.number_input("Avg Glucose Level (mg/dL)", 0.0, 120.0, 90.0)
         bmi_input = st.text_input("BMI", value="24.5")
+        
+        st.header("⚠️ Secondary Contributors")
+        ckd = st.checkbox("Chronic Kidney Disease (CKD)")
+        stress = st.checkbox("High Psychosocial Stress")
+        sedentary = st.checkbox("Sedentary Lifestyle")
+        infection = st.checkbox("History of Infections")
         
         st.header("🚬 Lifestyle")
         work_type = st.selectbox("Work Type", ["Private", "Self-employed", "Govt_job", "Student", "Never_worked"])
         smoking_status = st.selectbox("Smoking Status", ["never smoked", "formerly smoked", "smokes", "Unknown"])
 
+    # Persistent Prediction Buttons
     st.subheader("Select Prediction Type")
     c1, c2, c3 = st.columns(3)
     if c1.button("Predict Heart Risk"): st.session_state.pred_type = "Heart"
@@ -82,8 +91,6 @@ else:
     if c3.button("Predict Both"): st.session_state.pred_type = "Combined"
 
     if st.session_state.pred_type:
-        st.info(f"Current Prediction Mode: **{st.session_state.pred_type}**")
-        
         if not model or not patient_name:
             st.warning("Please ensure model is loaded and patient name is provided.")
         else:
@@ -91,13 +98,13 @@ else:
             age_grp, glu_grp, bmi_grp = engineer_features(age, avg_glucose_level, bmi, hypertension, diabetes)
             input_df = pd.DataFrame({'gender': [gender], 'age': [age], 'hypertension': [hypertension], 'ever_married': ["No"], 'work_type': [work_type], 'Residence_type': [residence_type], 'avg_glucose_level': [avg_glucose_level], 'bmi': [bmi], 'smoking_status': [smoking_status], 'age_group': [age_grp], 'glucose_group': [glu_grp], 'bmi_group': [bmi_grp]})
             
-            bp_boost = 0.30 if (systolic_bp >= 140 or diastolic_bp >= 90) else 0.0
+            bp_boost = 0.30 if (systolic_bp >= 140 or diastolic_bp >= 90) else 0.15 if (systolic_bp >= 130 or diastolic_bp >= 85) else 0.0
             raw_score = model.decision_function(input_df)[0]
-            adj_score = raw_score * {"Heart": 0.9, "Stroke": 1.1, "Combined": 1.4}.get(st.session_state.pred_type, 1.0) * (1 + bp_boost)
+            clinical_boost = 1.0 + (diabetes * 0.25) + (dyslipidemia * 0.20) + (ckd * 0.15) + (stress * 0.10) + (sedentary * 0.10) + (infection * 0.15) + bp_boost
+            adj_score = raw_score * {"Heart": 0.9, "Stroke": 1.1, "Combined": 1.4}.get(st.session_state.pred_type, 1.0) * clinical_boost
             
             risk_pct = (1 / (1 + np.exp(-adj_score))) * 100
             risk_lvl = "CRITICAL" if risk_pct > 75 else "ELEVATED" if risk_pct > 50 else "STABLE"
-            
             save_patient_data(patient_name, input_df, st.session_state.pred_type, adj_score, risk_lvl)
             
             st.divider()
@@ -105,21 +112,26 @@ else:
             col1.metric("Risk Score", f"{adj_score:.2f}")
             col2.metric("Probability", f"{risk_pct:.1f}%")
             col3.metric("Status", risk_lvl)
-
-            # Providing visual context of cardiovascular health:
-            st.write("Below is a breakdown of the key factors impacting the risk score:")
-            fig, ax = plt.subplots(figsize=(6, 2))
-            sns.barplot(x=['Age', 'BP', 'BMI'], y=[age*0.01, bp_boost, 0.2], palette='OrRd_r')
+            
+            st.subheader("📊 Clinical Impact Analysis")
+            fig, ax = plt.subplots(figsize=(6, 3))
+            sns.barplot(x=['Age', 'BP', 'Lifestyle'], y=[age * 0.01, bp_boost, 0.4], palette='OrRd_r')
             st.pyplot(fig)
+            
+            st.subheader("🩸 Blood Pressure Assessment")
+            if systolic_bp >= 180 or diastolic_bp >= 120: st.error("🚨 HYPERTENSIVE CRISIS")
+            elif systolic_bp >= 140 or diastolic_bp >= 90: st.warning("⚠️ Stage 2 Hypertension")
+            else: st.success("✅ Blood pressure within normal range.")
 
     with st.expander("Admin 🗃️: Patient Database"):
         if os.path.exists('patient_records.csv'):
-            df = pd.read_csv('patient_records.csv')
-            st.dataframe(df)
-            csv = df.to_csv(index=False).encode('utf-8')
+            df_records = pd.read_csv('patient_records.csv')
+            st.dataframe(df_records)
+            csv = df_records.to_csv(index=False).encode('utf-8')
             st.download_button("Download Data as CSV", csv, "patient_records.csv", "text/csv")
             if st.button("Clear Records"):
                 os.remove('patient_records.csv')
                 st.rerun()
 
-    st.markdown("<div style='text-align: center; color: #888;'>• Group 5 Project - March 2026 •</div>", unsafe_allow_html=True)
+    st.markdown("---")
+    st.markdown("<div style='text-align: center; color: #888;'>• BOUESTI CIS student GROUP 5 Project • </br> An assignment given by MRS T.O. ADEFEHINTI • March 2026 • Ikere-Ekiti</div>", unsafe_allow_html=True)

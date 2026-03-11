@@ -39,7 +39,7 @@ def login_portal():
         <style>
         .stApp {
             background: linear-gradient(rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.9)), 
-                        url("ccoeikere.png");
+                        url("/app/static/ccoeikere.png");
             background-size: contain;
             background-position: center;
             background-repeat: no-repeat;
@@ -61,7 +61,6 @@ def login_portal():
             else:
                 st.error("Invalid Username or Password")
     st.markdown("---")
-    # Fixed: Centered caption using Markdown div
     st.markdown("<div style='text-align: center; color: #0000ff;'>Developed by CIS student GROUP 5 as model for CSC 309 research given by Mrs. T.O. Adefehinti.</div>", unsafe_allow_html=True)
 
 # --- Main App Execution ---
@@ -136,6 +135,11 @@ else:
             st.pyplot(fig)
             
             st.subheader("🩸 Blood Pressure Assessment")
+            # Understanding blood pressure categories is key to health assessments
+            
+
+[Image of blood pressure categories chart]
+
             if systolic_bp >= 180 or diastolic_bp >= 120: st.error("🚨 HYPERTENSIVE CRISIS")
             elif systolic_bp >= 140 or diastolic_bp >= 90: st.warning("⚠️ Stage 2 Hypertension")
             else: st.success("✅ Blood pressure within normal range.")
@@ -149,4 +153,3 @@ else:
 
     st.markdown("---")
     st.markdown("<div style='text-align: center; color: #888;'>• BOUESTI CIS student GROUP 5 Project • </br> An assignment given by MRS T.O. ADEFEHINTI • March 2026 • Ikere-Ekiti</div>", unsafe_allow_html=True)
-

@@ -53,8 +53,8 @@ if not st.session_state.logged_in:
 else:
     model = joblib.load('final_ridge_cvd_model.pkl') if os.path.exists('final_ridge_cvd_model.pkl') else None
 
-    st.title("🫀 GROUP E Risk prediction Portal")
-    st.markdown("### 🏥 EKITI STATE BOUESTI STUDENT GROUP 5 CLINIC")
+    st.title("🫀 GROUP E HEART OR STROKE Risk prediction Portal")
+    st.markdown("### 🏥 EKITI STATE BOUESTI CIS STUDENT GROUP 5 CLINIC")
 
     with st.sidebar:
         if st.button("Logout"): st.session_state.logged_in = False; st.rerun()
@@ -81,7 +81,7 @@ else:
         work_type = st.selectbox("Work Type", ["Private", "Self-employed", "Govt_job", "Student", "Never_worked"])
         smoking_status = st.selectbox("Smoking Status", ["never smoked", "formerly smoked", "smokes", "Unknown"])
 
-    st.subheader("Assessment Type")
+    st.subheader("Select what you want to predict")
     col1, col2, col3 = st.columns(3)
     pred_type = None
     if col1.button("Predict Heart Risk"): pred_type = "Heart"
@@ -154,7 +154,7 @@ else:
             st.pyplot(fig)
             st.caption("This visualization represents how different clinical categories contribute to the calculated risk.")
 
-    with st.expander("Admin: Patient Database"):
+    with st.expander("Admin 🗃️: Patient Database"):
         if os.path.exists('patient_records.csv'):
             st.dataframe(pd.read_csv('patient_records.csv'))
             if st.button("Clear All Records"):
@@ -163,3 +163,4 @@ else:
 
     st.markdown("---")
     st.markdown("<div style='text-align: center; color: #888;'>BOUESTI GROUP 5 Project • March 2026 • Ikere-Ekiti</div>", unsafe_allow_html=True)
+

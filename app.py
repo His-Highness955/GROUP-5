@@ -16,13 +16,13 @@ if 'logged_in' not in st.session_state:
 
 # --- Login Portal Logic ---
 def login_portal():
-    # CSS to set a blurred watermark background
+    # CSS to set a blurred watermark background using the root image
     st.markdown(
         """
         <style>
         .stApp {
             background: linear-gradient(rgba(255, 255, 255, 0.85), rgba(255, 255, 255, 0.85)), 
-                        url("app/static/logo.jpg");
+                        url("logo.jpg");
             background-size: cover;
             background-position: center;
             background-repeat: no-repeat;
@@ -33,7 +33,9 @@ def login_portal():
     )
     
     # Adding the logo and header
-    st.image("static/logo.jpg", width=150)
+    if os.path.exists("logo.jpg"):
+        st.image("logo.jpg", width=150)
+    
     st.markdown("""
         <div style='text-align: center;'>
             <h1>🫀 CVD Risk Prediction Portal</h1>
@@ -180,6 +182,7 @@ else:
                 'Lifestyle/Stress': (stress + sedentary + (1 if smoking_status=="smokes" else 0)) * 0.3,
                 'Organ/Infection': (ckd + infection) * 0.4
             }
+            
             driver_df = pd.DataFrame(list(drivers.items()), columns=['Factor', 'Impact'])
             fig, ax = plt.subplots(figsize=(10, 4))
             sns.barplot(x='Impact', y='Factor', data=driver_df, palette='OrRd_r')

@@ -16,7 +16,7 @@ if 'logged_in' not in st.session_state:
 
 # --- Login Portal Logic ---
 def login_portal():
-    # CSS for watermark using ccoeikere.png as the background
+    # CSS for watermark
     st.markdown(
         """
         <style>
@@ -181,7 +181,7 @@ else:
                 'Lifestyle/Stress': (stress + sedentary + (1 if smoking_status=="smokes" else 0)) * 0.3,
                 'Organ/Infection': (ckd + infection) * 0.4
             }
-            # Visualizing how different clinical factors affect patient risk
+            
             driver_df = pd.DataFrame(list(drivers.items()), columns=['Factor', 'Impact'])
             fig, ax = plt.subplots(figsize=(10, 4))
             sns.barplot(x='Impact', y='Factor', data=driver_df, palette='OrRd_r')

@@ -1,4 +1,4 @@
-import streamlit as st
+ import streamlit as st
 import pandas as pd
 import numpy as np
 import joblib
@@ -16,7 +16,7 @@ if 'logged_in' not in st.session_state:
 
 # --- Login Portal Logic ---
 def login_portal():
-    # CSS for watermark using ccoeikere.png
+    # CSS for watermark using ccoeikere.png as the background
     st.markdown(
         """
         <style>
@@ -32,9 +32,9 @@ def login_portal():
         unsafe_allow_html=True
     )
     
-    # Display the clear logo at the top
-    if os.path.exists("ccoeikere.png"):
-        st.image("ccoeikere.png", width=300)
+    # Display the logo clearly at the top
+    if os.path.exists("logo.jpg"):
+        st.image("logo.jpg", width=150)
     
     st.markdown("""
         <div style='text-align: center;'>
@@ -181,7 +181,7 @@ else:
                 'Lifestyle/Stress': (stress + sedentary + (1 if smoking_status=="smokes" else 0)) * 0.3,
                 'Organ/Infection': (ckd + infection) * 0.4
             }
-            
+            # Visualizing how different clinical factors affect patient risk
             driver_df = pd.DataFrame(list(drivers.items()), columns=['Factor', 'Impact'])
             fig, ax = plt.subplots(figsize=(10, 4))
             sns.barplot(x='Impact', y='Factor', data=driver_df, palette='OrRd_r')

@@ -13,7 +13,44 @@ st.set_page_config(page_title="Group 5 Clinical Portal", layout="wide", page_ico
 # --- Session State ---
 if 'logged_in' not in st.session_state:
     st.session_state.logged_in = False
-   
+
+# --- Helper Functions ---
+def save_patient_data(patient_name, input_df, pred_type, score, risk_lvl):
+    file_path = 'patient_records.csv'
+    new_record = input_df.copy()
+    new_record['patient_name'] = patient_name
+    new_record['prediction_type'] = pred_type
+    new_record['score'] = score
+    new_record['risk_level'] = risk_lvl
+    new_record['timestamp'] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    
+    file_exists = os.path.exists(file_path)
+    new_record.to_csv(file_path, mode='a', header=not file_exists, index=False)
+
+def engineer_features(age, glucose, bmi_val, hypertension, diabetes):
+    age_grp = 'young' if age <= 35 else 'middle' if age <= 55 else 'senior'
+    bmi_grp = 'underweight' if bmi_val < 18.5 else 'normal' if bmi_val < 25 else 'overweight' if bmi_val < 30 else 'obese'
+    glu_grp = 'normal' if glucose < 100 else 'prediabetes' if glucose < 126 else 'diabetes'
+    return age_grp, glu_grp, bmi_grp
+
+# --- UI Components ---
+def login_portal():
+    # CSS for watermark
+    st.markdown(
+        """
+        <style>
+        .stApp {
+            background: linear-gradient(rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.9)), 
+                        url("ccoeikere.png");
+            background-size: contain;
+            background-position: center;
+            background-repeat: no-repeat;
+        }
+        </style>
+        """,
+        unsafe_allow_html=True
+    )
+    
     st.markdown("""
         <div style='text-align: center;'>
             <h1>🫀 CVD Risk Prediction Portal</h1>
@@ -38,37 +75,7 @@ if 'logged_in' not in st.session_state:
     st.markdown("---")
     st.caption("Developed for the CIS Department Coursework under the supervision of Mrs. T.O. Adefehinti.")
 
-# --- Data Persistence ---
-def save_patient_data(patient_name, input_df, pred_type, score, risk_lvl):
-    file_path = 'patient_records.csv'
-    new_record = input_df.copy()
-    new_record['patient_name'] = patient_name
-    new_record['prediction_type'] = pred_type
-    new_record['score'] = score
-    new_record['risk_level'] = risk_lvl
-    new_record['timestamp'] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    
-    file_exists = os.path.exists(file_path)
-    new_record.to_csv(file_path, mode='a', header=not file_exists, index=False)
-
-# --- Feature Engineering ---
-def engineer_features(age, glucose, bmi_val, hypertension, diabetes):
-    if age <= 35: age_grp = 'young'
-    elif age <= 55: age_grp = 'middle'
-    else: age_grp = 'senior'
-    
-    if bmi_val < 18.5: bmi_grp = 'underweight'
-    elif bmi_val < 25: bmi_grp = 'normal'
-    elif bmi_val < 30: bmi_grp = 'overweight'
-    else: bmi_grp = 'obese'
-    
-    if glucose < 100: glu_grp = 'normal'
-    elif glucose < 126: glu_grp = 'prediabetes'
-    else: glu_grp = 'diabetes'
-    
-    return age_grp, glu_grp, bmi_grp
-
-# --- Main App ---
+# --- Main App Logic ---
 if not st.session_state.logged_in:
     login_portal()
 else:
@@ -159,6 +166,7 @@ else:
                 'Lifestyle/Stress': (stress + sedentary + (1 if smoking_status=="smokes" else 0)) * 0.3,
                 'Organ/Infection': (ckd + infection) * 0.4
             }
+            # Visualizing the clinical factors 
             driver_df = pd.DataFrame(list(drivers.items()), columns=['Factor', 'Impact'])
             fig, ax = plt.subplots(figsize=(10, 4))
             sns.barplot(x='Impact', y='Factor', data=driver_df, palette='OrRd_r')
@@ -183,5 +191,3 @@ else:
 
     st.markdown("---")
     st.markdown("<div style='text-align: center; color: #888;'>• BOUESTI CIS student GROUP 5 Project • </br> An assignment given by MRS T.O. ADEFEHINTI • March 2026 • Ikere-Ekiti</div>", unsafe_allow_html=True)
-
-

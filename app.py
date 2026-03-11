@@ -129,17 +129,15 @@ else:
             col3.metric("Status", risk_lvl)
             
             st.subheader("📊 Clinical Impact Analysis")
-            # Visualizing the factors driving the prediction
             fig, ax = plt.subplots(figsize=(6, 3))
             sns.barplot(x=['Age', 'BP', 'Lifestyle'], y=[age * 0.01, bp_boost, 0.4], palette='OrRd_r')
             st.pyplot(fig)
             
             st.subheader("🩸 Blood Pressure Assessment")
             # Understanding blood pressure categories is key to health assessments
+            # To add an image, uncomment the line below and ensure the file is in your /static folder:
+            # st.image("/app/static/blood_pressure_chart.png")
             
-
-[Image of blood pressure categories chart]
-
             if systolic_bp >= 180 or diastolic_bp >= 120: st.error("🚨 HYPERTENSIVE CRISIS")
             elif systolic_bp >= 140 or diastolic_bp >= 90: st.warning("⚠️ Stage 2 Hypertension")
             else: st.success("✅ Blood pressure within normal range.")

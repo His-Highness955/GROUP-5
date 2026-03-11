@@ -180,7 +180,6 @@ else:
                 'Lifestyle/Stress': (stress + sedentary + (1 if smoking_status=="smokes" else 0)) * 0.3,
                 'Organ/Infection': (ckd + infection) * 0.4
             }
-            
             driver_df = pd.DataFrame(list(drivers.items()), columns=['Factor', 'Impact'])
             fig, ax = plt.subplots(figsize=(10, 4))
             sns.barplot(x='Impact', y='Factor', data=driver_df, palette='OrRd_r')

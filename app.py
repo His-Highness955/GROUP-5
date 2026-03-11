@@ -61,15 +61,22 @@ else:
         st.header("👤 Patient Info")
         patient_name = st.text_input("Patient Full Name")
         gender = st.selectbox("Gender", ["Male", "Female", "Other"])
-        age = st.number_input("Age", 1, 120, 45)
+        
+        # --- Updated Age Range: 0-120 ---
+        age = st.number_input("Age", 0, 120, 45)
+        
         residence_type = st.selectbox("Residence Type", ["Urban", "Rural"])
         
         st.header("🏥 Primary Clinical Data")
         hypertension = st.radio("Hypertension History?", [0, 1], format_func=lambda x: "Yes" if x==1 else "No")
         diabetes = st.radio("Diabetes / Hyperglycemia?", [0, 1], format_func=lambda x: "Yes" if x==1 else "No")
         dyslipidemia = st.radio("Dyslipidemia (High Cholesterol)?", [0, 1], format_func=lambda x: "Yes" if x==1 else "No")
-        avg_glucose_level = st.number_input("Avg Glucose Level (mg/dL)", 50.0, 400.0, 105.0)
-        bmi = st.number_input("Body Mass Index (BMI)", 10.0, 70.0, 24.5)
+        
+        # --- Outliers & Sanity Checks for Glucose ---
+        avg_glucose_level = st.number_input("Avg Glucose Level (mg/dL)", 0.0, 500.0, 105.0)
+        
+        # --- BMI Input with Median Imputation Logic ---
+        bmi_input = st.text_input("Body Mass Index (BMI) - Leave blank for Median Imputation", value="24.5")
         
         st.header("⚠️ Secondary Contributors")
         ckd = st.checkbox("Chronic Kidney Disease (CKD)")
@@ -92,9 +99,29 @@ else:
         if not model or not patient_name:
             st.warning("Please ensure model is loaded and patient name is provided.")
         else:
+            # --- BMI Handling: Median Imputation (≈ 28.1) ---
+            try:
+                bmi = float(bmi_input) if bmi_input.strip() != "" else 28.1
+            except ValueError:
+                bmi = 28.1 # Default to median if text is invalid
+            
+            # --- Outliers & Sanity Checks: BMI Winsorization ---
+            if bmi > 70:
+                bmi = 70.0
+            elif bmi < 10 and bmi != 0: # Sanity floor
+                bmi = 10.0
+
+            # --- Outliers & Sanity Checks: Glucose Winsorization ---
+            if avg_glucose_level > 350:
+                avg_glucose_level = 350.0 # Standard physiological ceiling for risk models
+            
+            # --- Consistency Check ---
+            if pred_type == "Stroke" and not hypertension and age < 30:
+                st.info("ℹ️ Clinical Note: Stroke risk without hypertension at young age is flagged for manual review.")
+
             age_grp, glu_grp, bmi_grp = engineer_features(age, avg_glucose_level, bmi)
             
-            # Prepare data for model (using defaults for training features not in UI)
+            # Prepare data for model
             input_df = pd.DataFrame({
                 'gender': [gender], 'age': [age], 'hypertension': [hypertension], 
                 'ever_married': ["No"], 'work_type': [work_type], 'Residence_type': [residence_type], 
@@ -103,10 +130,8 @@ else:
             })
             
             # --- Advanced Risk Calculation ---
-            # Get base score from Ridge model
             raw_score = model.decision_function(input_df)[0]
             
-            # Apply clinical multipliers for the new factors
             clinical_boost = 1.0
             if diabetes: clinical_boost += 0.25
             if dyslipidemia: clinical_boost += 0.20
@@ -118,7 +143,6 @@ else:
             multipliers = {"Heart": 0.9, "Stroke": 1.1, "Combined": 1.4}
             adj_score = raw_score * multipliers.get(pred_type, 1.0) * clinical_boost
             
-            # Convert to Percentage (Sigmoid)
             probability = 1 / (1 + np.exp(-adj_score))
             risk_pct = probability * 100
             
@@ -138,7 +162,6 @@ else:
             else:
                 st.success("✅ STABLE: Patient maintains a low-risk profile.")
 
-            # --- Contribution Breakdown ---
             st.subheader("📊 Clinical Impact Analysis")
             drivers = {
                 'Age/Bio': age * 0.01,
@@ -152,7 +175,7 @@ else:
             fig, ax = plt.subplots(figsize=(10, 4))
             sns.barplot(x='Impact', y='Factor', data=driver_df, palette='OrRd_r')
             st.pyplot(fig)
-            st.caption("This visualization represents how different clinical categories contribute to the calculated risk.")
+            st.caption(f"Cleaning Log: BMI used: {bmi} | Glucose used: {avg_glucose_level}")
 
     with st.expander("Admin 🗃️: Patient Database"):
         if os.path.exists('patient_records.csv'):
@@ -163,4 +186,3 @@ else:
 
     st.markdown("---")
     st.markdown("<div style='text-align: center; color: #888;'>BOUESTI GROUP 5 Project • March 2026 • Ikere-Ekiti</div>", unsafe_allow_html=True)
-

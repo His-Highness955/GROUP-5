@@ -32,24 +32,6 @@ def engineer_features(age, glucose, bmi_val, hypertension, diabetes):
     bmi_grp = 'underweight' if bmi_val < 18.5 else 'normal' if bmi_val < 25 else 'overweight' if bmi_val < 30 else 'obese'
     glu_grp = 'normal' if glucose < 100 else 'prediabetes' if glucose < 126 else 'diabetes'
     return age_grp, glu_grp, bmi_grp
-
-# --- UI Components ---
-def login_portal():
-    # CSS for watermark
-    st.markdown(
-        """
-        <style>
-        .stApp {
-            background: linear-gradient(rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.9)), 
-                        url("ccoeikere.png");
-            background-size: contain;
-            background-position: center;
-            background-repeat: no-repeat;
-        }
-        </style>
-        """,
-        unsafe_allow_html=True
-    )
     
     st.markdown("""
         <div style='text-align: center;'>
@@ -191,4 +173,5 @@ else:
 
     st.markdown("---")
     st.markdown("<div style='text-align: center; color: #888;'>• BOUESTI CIS student GROUP 5 Project • </br> An assignment given by MRS T.O. ADEFEHINTI • March 2026 • Ikere-Ekiti</div>", unsafe_allow_html=True)
+
 

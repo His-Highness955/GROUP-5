@@ -62,7 +62,7 @@ def login_portal():
                 st.error("Invalid Username or Password")
     st.markdown("---")
     # Fixed: Centered caption using Markdown div
-    st.markdown("<div style='text-align: center; color: #555;'>Developed by CIS student GROUP 5 as model for CSC 309 research given by Mrs. T.O. Adefehinti.</div>", unsafe_allow_html=True)
+    st.markdown("<div style='text-align: center; color: #0000ff;'>Developed by CIS student GROUP 5 as model for CSC 309 research given by Mrs. T.O. Adefehinti.</div>", unsafe_allow_html=True)
 
 # --- Main App Execution ---
 if not st.session_state.logged_in:
@@ -149,3 +149,4 @@ else:
 
     st.markdown("---")
     st.markdown("<div style='text-align: center; color: #888;'>• BOUESTI CIS student GROUP 5 Project • </br> An assignment given by MRS T.O. ADEFEHINTI • March 2026 • Ikere-Ekiti</div>", unsafe_allow_html=True)
+

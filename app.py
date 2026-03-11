@@ -52,7 +52,7 @@ def login_portal():
     
     _, col2, _ = st.columns([1, 2, 1])
     with col2:
-        username = st.text_input("Username") # Fixed: Removed invalid type parameter
+        username = st.text_input("Username")
         password = st.text_input("Password", type="password")
         if st.button("Login 🔐"):
             if username == "team 5" and password == "bouesti2026":
@@ -61,7 +61,8 @@ def login_portal():
             else:
                 st.error("Invalid Username or Password")
     st.markdown("---")
-    </p>st.caption("Developed by CIS student GROUP 5 as model for CSC 309 research given by Mrs. T.O. Adefehinti.")
+    # Fixed: Centered caption using Markdown div
+    st.markdown("<div style='text-align: center; color: #555;'>Developed by CIS student GROUP 5 as model for CSC 309 research given by Mrs. T.O. Adefehinti.</div>", unsafe_allow_html=True)
 
 # --- Main App Execution ---
 if not st.session_state.logged_in:
@@ -129,7 +130,7 @@ else:
             col3.metric("Status", risk_lvl)
             
             st.subheader("📊 Clinical Impact Analysis")
-            
+            # Visualizing the factors driving the prediction
             fig, ax = plt.subplots(figsize=(6, 3))
             sns.barplot(x=['Age', 'BP', 'Lifestyle'], y=[age * 0.01, bp_boost, 0.4], palette='OrRd_r')
             st.pyplot(fig)
@@ -148,8 +149,3 @@ else:
 
     st.markdown("---")
     st.markdown("<div style='text-align: center; color: #888;'>• BOUESTI CIS student GROUP 5 Project • </br> An assignment given by MRS T.O. ADEFEHINTI • March 2026 • Ikere-Ekiti</div>", unsafe_allow_html=True)
-
-
-
-
-

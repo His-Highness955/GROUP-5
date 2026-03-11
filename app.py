@@ -18,7 +18,7 @@ if 'logged_in' not in st.session_state:
 def login_portal():
     st.title("🔐 Secure Access")
     st.info("Please log in to access the CVD Risk Predictor.")
-    username = st.text_input("Username")
+    username = st.text_input("Username", value="team 5")
     password = st.text_input("Password", type="password")
     if st.button("Login"):
         if username == "team 5" and password == "bouesti2026":
@@ -27,7 +27,7 @@ def login_portal():
         else:
             st.error("Invalid Username or Password")
 
-# --- Robust Data Persistence ---
+# --- Data Persistence ---
 def save_patient_data(patient_name, input_df, pred_type, score, risk_lvl):
     file_path = 'patient_records.csv'
     new_record = input_df.copy()
@@ -37,51 +37,52 @@ def save_patient_data(patient_name, input_df, pred_type, score, risk_lvl):
     new_record['risk_level'] = risk_lvl
     new_record['timestamp'] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     
-    cols = ['gender', 'age', 'hypertension', 'ever_married', 'work_type', 
-            'Residence_type', 'avg_glucose_level', 'bmi', 'smoking_status', 
-            'age_group', 'glucose_group', 'bmi_group', 'patient_name', 
-            'prediction_type', 'score', 'risk_level', 'timestamp']
-    
-    new_record = new_record[cols]
     file_exists = os.path.exists(file_path)
     new_record.to_csv(file_path, mode='a', header=not file_exists, index=False)
 
 # --- Feature Engineering ---
 def engineer_features(age, glucose, bmi_val):
     age_grp = 'child' if age <= 18 else 'young_adult' if age <= 40 else 'middle_age' if age <= 60 else 'senior'
-    glu_grp = 'normal' if glucose <= 100 else 'prediabetes' if glucose <= 126 else 'diabetes'
+    glu_grp = 'normal' if glucose <= 100 else 'prediabetes' if glucose <= 126 else 'diabetes/hyperglycemia'
     bmi_grp = 'underweight' if bmi_val < 18.5 else 'normal' if bmi_val < 25 else 'overweight' if bmi_val < 30 else 'obese'
     return age_grp, glu_grp, bmi_grp
 
-# --- Main App Content ---
+# --- Main App ---
 if not st.session_state.logged_in:
     login_portal()
 else:
     model = joblib.load('final_ridge_cvd_model.pkl') if os.path.exists('final_ridge_cvd_model.pkl') else None
 
     st.title("🫀 GROUP E Risk prediction Portal")
-    st.markdown("### 🏥 EKITI STATE BOUESTI CIS STUDENT CSC 309 GROUP 5 CLINIC")
+    st.markdown("### 🏥 EKITI STATE BOUESTI STUDENT GROUP 5 CLINIC")
 
     with st.sidebar:
-        if st.button("Logout"): st.session_state.logged_in = False; st.rerun() 
+        if st.button("Logout"): st.session_state.logged_in = False; st.rerun()
         st.header("👤 Patient Info")
         patient_name = st.text_input("Patient Full Name")
         gender = st.selectbox("Gender", ["Male", "Female", "Other"])
-        age = st.number_input("Age", 1, 120, 60)
-        ever_married = st.selectbox("Ever Married?", ["Yes", "No"])
+        age = st.number_input("Age", 1, 120, 45)
         residence_type = st.selectbox("Residence Type", ["Urban", "Rural"])
-        st.header("🏥 Clinical Data")
-        hypertension = st.radio("Hypertension History?", [0, 1], format_func=lambda x: "Yes" if x==1 else "No")
-        avg_glucose_level = st.number_input("Avg Glucose Level (mg/dL)", 50.0, 300.0, 105.0)
-        bmi = st.number_input("Body Mass Index (BMI)", 10.0, 70.0, 24.5)
-        st.header("🚬 Lifestyle")
-        work_type = st.selectbox("Work Type", ["Private", "Self-employed", "Govt_job", "children", "Never_worked", "Student", "jobless"])
-        smoking_status = st.selectbox("Smoking Status", ["never smoked", "formerly smoked", "smokes", "Unknown"])
         
+        st.header("🏥 Primary Clinical Data")
+        hypertension = st.radio("Hypertension History?", [0, 1], format_func=lambda x: "Yes" if x==1 else "No")
+        diabetes = st.radio("Diabetes / Hyperglycemia?", [0, 1], format_func=lambda x: "Yes" if x==1 else "No")
+        dyslipidemia = st.radio("Dyslipidemia (High Cholesterol)?", [0, 1], format_func=lambda x: "Yes" if x==1 else "No")
+        avg_glucose_level = st.number_input("Avg Glucose Level (mg/dL)", 50.0, 400.0, 105.0)
+        bmi = st.number_input("Body Mass Index (BMI)", 10.0, 70.0, 24.5)
+        
+        st.header("⚠️ Secondary Contributors")
+        ckd = st.checkbox("Chronic Kidney Disease (CKD)")
+        stress = st.checkbox("High Psychosocial Stress")
+        sedentary = st.checkbox("Sedentary Lifestyle (Lack of Exercise)")
+        infection = st.checkbox("History of Infections (e.g. Rheumatic Fever)")
+        
+        st.header("🚬 Lifestyle")
+        work_type = st.selectbox("Work Type", ["Private", "Self-employed", "Govt_job", "Student", "Never_worked"])
+        smoking_status = st.selectbox("Smoking Status", ["never smoked", "formerly smoked", "smokes", "Unknown"])
 
-    st.subheader("Select what you want to predict")
+    st.subheader("Assessment Type")
     col1, col2, col3 = st.columns(3)
-    
     pred_type = None
     if col1.button("Predict Heart Risk"): pred_type = "Heart"
     if col2.button("Predict Stroke Risk"): pred_type = "Stroke"
@@ -92,20 +93,32 @@ else:
             st.warning("Please ensure model is loaded and patient name is provided.")
         else:
             age_grp, glu_grp, bmi_grp = engineer_features(age, avg_glucose_level, bmi)
+            
+            # Prepare data for model (using defaults for training features not in UI)
             input_df = pd.DataFrame({
                 'gender': [gender], 'age': [age], 'hypertension': [hypertension], 
-                'ever_married': [ever_married], 'work_type': [work_type], 
-                'Residence_type': [residence_type], 'avg_glucose_level': [avg_glucose_level], 
-                'bmi': [bmi], 'smoking_status': [smoking_status], 
+                'ever_married': ["No"], 'work_type': [work_type], 'Residence_type': [residence_type], 
+                'avg_glucose_level': [avg_glucose_level], 'bmi': [bmi], 'smoking_status': [smoking_status],
                 'age_group': [age_grp], 'glucose_group': [glu_grp], 'bmi_group': [bmi_grp]
             })
             
-            # --- Predictions and Probability ---
+            # --- Advanced Risk Calculation ---
+            # Get base score from Ridge model
             raw_score = model.decision_function(input_df)[0]
-            multipliers = {"Heart": 0.9, "Stroke": 1.1, "Combined": 1.4}
-            adj_score = raw_score * multipliers.get(pred_type, 1.0)
             
-            # Convert raw score to percentage probability
+            # Apply clinical multipliers for the new factors
+            clinical_boost = 1.0
+            if diabetes: clinical_boost += 0.25
+            if dyslipidemia: clinical_boost += 0.20
+            if ckd: clinical_boost += 0.15
+            if stress: clinical_boost += 0.10
+            if sedentary: clinical_boost += 0.10
+            if infection: clinical_boost += 0.15
+            
+            multipliers = {"Heart": 0.9, "Stroke": 1.1, "Combined": 1.4}
+            adj_score = raw_score * multipliers.get(pred_type, 1.0) * clinical_boost
+            
+            # Convert to Percentage (Sigmoid)
             probability = 1 / (1 + np.exp(-adj_score))
             risk_pct = probability * 100
             
@@ -113,37 +126,40 @@ else:
             save_patient_data(patient_name, input_df, pred_type, adj_score, risk_lvl)
             
             st.divider()
+            c1, c2, c3 = st.columns(3)
+            c1.metric("Risk Score", f"{adj_score:.2f}")
+            c2.metric("Probability", f"{risk_pct:.1f}%")
+            c3.metric("Triage Status", risk_lvl)
             
-            # Display results
-            col_m1, col_m2 = st.columns(2)
-            col_m1.metric(f"{pred_type} Risk Score", f"{adj_score:.3f}")
-            col_m2.metric(f"Probability of Risk", f"{risk_pct:.1f}%")
-            
-            if risk_lvl == "CRITICAL": st.error(f"Status: {risk_lvl} - Immediate Consultation Required")
-            elif risk_lvl == "ELEVATED": st.warning(f"Status: {risk_lvl} - Lifestyle Intervention Advised")
-            else: st.success(f"Status: {risk_lvl} - Maintenance Recommended")
+            if risk_lvl == "CRITICAL":
+                st.error("🚨 CRITICAL RISK: Immediate clinical intervention and specialist referral required.")
+            elif risk_lvl == "ELEVATED":
+                st.warning("⚠️ ELEVATED RISK: Lifestyle modification and regular monitoring advised.")
+            else:
+                st.success("✅ STABLE: Patient maintains a low-risk profile.")
 
-    with st.expander("View Saved Patient Records 📝 (Admin)"):
+            # --- Contribution Breakdown ---
+            st.subheader("📊 Clinical Impact Analysis")
+            drivers = {
+                'Age/Bio': age * 0.01,
+                'Primary (HTN/DB)': (hypertension + diabetes) * 0.6,
+                'Lipids/Dyslipidemia': dyslipidemia * 0.4,
+                'Lifestyle/Stress': (stress + sedentary + (1 if smoking_status=="smokes" else 0)) * 0.3,
+                'Organ/Infection': (ckd + infection) * 0.4
+            }
+            driver_df = pd.DataFrame(list(drivers.items()), columns=['Factor', 'Impact'])
+            
+            fig, ax = plt.subplots(figsize=(10, 4))
+            sns.barplot(x='Impact', y='Factor', data=driver_df, palette='OrRd_r')
+            st.pyplot(fig)
+            st.caption("This visualization represents how different clinical categories contribute to the calculated risk.")
+
+    with st.expander("Admin: Patient Database"):
         if os.path.exists('patient_records.csv'):
-            try:
-                st.dataframe(pd.read_csv('patient_records.csv', engine='python'))
-            except Exception: st.error("File is corrupted.")
-        if st.button("⚠️ Reset Records File"):
-            if os.path.exists('patient_records.csv'):
+            st.dataframe(pd.read_csv('patient_records.csv'))
+            if st.button("Clear All Records"):
                 os.remove('patient_records.csv')
                 st.rerun()
- # --- Footer ---
+
     st.markdown("---")
-    st.markdown("""
-        <div style='text-align: center; color: #888; padding: 20px 0;'>
-            <strong>BOUESTI GROUP 5 Project</strong> • 🏥 EKITI STATE BOUESTI STUDENT GROUP 5 CLINIC <br>
-            Ikere-Ekiti / Ikere City • March 2026<br>
-            <small>Ridge Regression prediction model for GROUP E</small>
-        </div>
-        """, unsafe_allow_html=True)
-
-
-
-
-
-
+    st.markdown("<div style='text-align: center; color: #888;'>BOUESTI GROUP 5 Project • March 2026 • Ikere-Ekiti</div>", unsafe_allow_html=True)

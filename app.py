@@ -40,12 +40,29 @@ def save_patient_data(patient_name, input_df, pred_type, score, risk_lvl):
     file_exists = os.path.exists(file_path)
     new_record.to_csv(file_path, mode='a', header=not file_exists, index=False)
 
-# --- Feature Engineering ---
-def engineer_features(age, glucose, bmi_val):
-    age_grp = 'child' if age <= 18 else 'young_adult' if age <= 40 else 'middle_age' if age <= 60 else 'senior'
-    glu_grp = 'normal' if glucose <= 100 else 'prediabetes' if glucose <= 126 else 'diabetes/hyperglycemia'
-    bmi_grp = 'underweight' if bmi_val < 18.5 else 'normal' if bmi_val < 25 else 'overweight' if bmi_val < 30 else 'obese'
-    return age_grp, glu_grp, bmi_grp
+# --- Updated Feature Engineering (Domain-Informed) ---
+def engineer_features(age, glucose, bmi_val, hypertension, diabetes):
+    # 1. Age Groups
+    if age <= 35: age_grp = 'young'
+    elif age <= 55: age_grp = 'middle'
+    else: age_grp = 'senior'
+    
+    # 2. BMI Categories (WHO)
+    if bmi_val < 18.5: bmi_grp = 'underweight'
+    elif bmi_val < 25: bmi_grp = 'normal'
+    elif bmi_val < 30: bmi_grp = 'overweight'
+    else: bmi_grp = 'obese'
+    
+    # 3. Glucose Bands
+    if glucose < 100: glu_grp = 'normal'
+    elif glucose < 126: glu_grp = 'prediabetes'
+    else: glu_grp = 'diabetes'
+    
+    # 4. Interaction terms (calculated for the model)
+    age_htn_interaction = age * hypertension
+    bmi_diabetes_interaction = bmi_val * diabetes
+    
+    return age_grp, glu_grp, bmi_grp, age_htn_interaction, bmi_diabetes_interaction
 
 # --- Main App ---
 if not st.session_state.logged_in:
@@ -61,10 +78,7 @@ else:
         st.header("👤 Patient Info")
         patient_name = st.text_input("Patient Full Name")
         gender = st.selectbox("Gender", ["Male", "Female", "Other"])
-        
-        # --- Updated Age Range: 0-120 ---
         age = st.number_input("Age", 0, 120, 45)
-        
         residence_type = st.selectbox("Residence Type", ["Urban", "Rural"])
         
         st.header("🏥 Primary Clinical Data")
@@ -72,11 +86,10 @@ else:
         diabetes = st.radio("Diabetes / Hyperglycemia?", [0, 1], format_func=lambda x: "Yes" if x==1 else "No")
         dyslipidemia = st.radio("Dyslipidemia (High Cholesterol)?", [0, 1], format_func=lambda x: "Yes" if x==1 else "No")
         
-        # --- Outliers & Sanity Checks for Glucose ---
-        avg_glucose_level = st.number_input("Avg Glucose Level (mg/dL)", 0.0, 500.0, 105.0)
+        # --- Glucose Constraint: Max 120 ---
+        avg_glucose_level = st.number_input("Avg Glucose Level (mg/dL)", 0.0, 120.0, 90.0)
         
-        # --- BMI Input with Median Imputation Logic ---
-        bmi_input = st.text_input("Body Mass Index (BMI) - Leave blank for Median Imputation", value="24.5")
+        bmi_input = st.text_input("Body Mass Index (BMI) - Leave blank for Median (28.1)", value="24.5")
         
         st.header("⚠️ Secondary Contributors")
         ckd = st.checkbox("Chronic Kidney Disease (CKD)")
@@ -99,29 +112,11 @@ else:
         if not model or not patient_name:
             st.warning("Please ensure model is loaded and patient name is provided.")
         else:
-            # --- BMI Handling: Median Imputation (≈ 28.1) ---
-            try:
-                bmi = float(bmi_input) if bmi_input.strip() != "" else 28.1
-            except ValueError:
-                bmi = 28.1 # Default to median if text is invalid
+            bmi = float(bmi_input) if bmi_input.strip() != "" else 28.1
             
-            # --- Outliers & Sanity Checks: BMI Winsorization ---
-            if bmi > 70:
-                bmi = 70.0
-            elif bmi < 10 and bmi != 0: # Sanity floor
-                bmi = 10.0
-
-            # --- Outliers & Sanity Checks: Glucose Winsorization ---
-            if avg_glucose_level > 350:
-                avg_glucose_level = 350.0 # Standard physiological ceiling for risk models
+            # Feature Engineering
+            age_grp, glu_grp, bmi_grp, int1, int2 = engineer_features(age, avg_glucose_level, bmi, hypertension, diabetes)
             
-            # --- Consistency Check ---
-            if pred_type == "Stroke" and not hypertension and age < 30:
-                st.info("ℹ️ Clinical Note: Stroke risk without hypertension at young age is flagged for manual review.")
-
-            age_grp, glu_grp, bmi_grp = engineer_features(age, avg_glucose_level, bmi)
-            
-            # Prepare data for model
             input_df = pd.DataFrame({
                 'gender': [gender], 'age': [age], 'hypertension': [hypertension], 
                 'ever_married': ["No"], 'work_type': [work_type], 'Residence_type': [residence_type], 
@@ -129,16 +124,11 @@ else:
                 'age_group': [age_grp], 'glucose_group': [glu_grp], 'bmi_group': [bmi_grp]
             })
             
-            # --- Advanced Risk Calculation ---
             raw_score = model.decision_function(input_df)[0]
             
-            clinical_boost = 1.0
-            if diabetes: clinical_boost += 0.25
-            if dyslipidemia: clinical_boost += 0.20
-            if ckd: clinical_boost += 0.15
-            if stress: clinical_boost += 0.10
-            if sedentary: clinical_boost += 0.10
-            if infection: clinical_boost += 0.15
+            # Clinical Multipliers
+            clinical_boost = 1.0 + (diabetes * 0.25) + (dyslipidemia * 0.20) + (ckd * 0.15) + \
+                             (stress * 0.10) + (sedentary * 0.10) + (infection * 0.15)
             
             multipliers = {"Heart": 0.9, "Stroke": 1.1, "Combined": 1.4}
             adj_score = raw_score * multipliers.get(pred_type, 1.0) * clinical_boost
@@ -153,15 +143,9 @@ else:
             c1, c2, c3 = st.columns(3)
             c1.metric("Risk Score", f"{adj_score:.2f}")
             c2.metric("Probability", f"{risk_pct:.1f}%")
-            c3.metric("Triage Status", risk_lvl)
+            c3.metric("Status", risk_lvl)
             
-            if risk_lvl == "CRITICAL":
-                st.error("🚨 CRITICAL RISK: Immediate clinical intervention and specialist referral required.")
-            elif risk_lvl == "ELEVATED":
-                st.warning("⚠️ ELEVATED RISK: Lifestyle modification and regular monitoring advised.")
-            else:
-                st.success("✅ STABLE: Patient maintains a low-risk profile.")
-
+            # Visualization
             st.subheader("📊 Clinical Impact Analysis")
             drivers = {
                 'Age/Bio': age * 0.01,
@@ -171,11 +155,9 @@ else:
                 'Organ/Infection': (ckd + infection) * 0.4
             }
             driver_df = pd.DataFrame(list(drivers.items()), columns=['Factor', 'Impact'])
-            
             fig, ax = plt.subplots(figsize=(10, 4))
             sns.barplot(x='Impact', y='Factor', data=driver_df, palette='OrRd_r')
             st.pyplot(fig)
-            st.caption(f"Cleaning Log: BMI used: {bmi} | Glucose used: {avg_glucose_level}")
 
     with st.expander("Admin 🗃️: Patient Database"):
         if os.path.exists('patient_records.csv'):
@@ -183,6 +165,3 @@ else:
             if st.button("Clear All Records"):
                 os.remove('patient_records.csv')
                 st.rerun()
-
-    st.markdown("---")
-    st.markdown("<div style='text-align: center; color: #888;'>BOUESTI GROUP 5 Project • March 2026 • Ikere-Ekiti</div>", unsafe_allow_html=True)

@@ -106,10 +106,8 @@ else:
             col2.metric("Probability", f"{risk_pct:.1f}%")
             col3.metric("Status", risk_lvl)
 
-            # 
-
-[Image of heart anatomy and cardiovascular system]
-
+            # Providing visual context of cardiovascular health:
+            st.write("Below is a breakdown of the key factors impacting the risk score:")
             fig, ax = plt.subplots(figsize=(6, 2))
             sns.barplot(x=['Age', 'BP', 'BMI'], y=[age*0.01, bp_boost, 0.2], palette='OrRd_r')
             st.pyplot(fig)

@@ -48,10 +48,10 @@ def login_portal():
         """,
         unsafe_allow_html=True
     )
-    st.markdown("<div style='text-align: center;'><h1>🫀 CVD Risk Prediction Portal</h1><h3>BOUESTI CIS STUDENT GROUP 5 CLINIC</h3></div>", unsafe_allow_html=True)
+    st.markdown("<div style='text-align: center;'><h1>🫀 CVD Risk Prediction Portal</h1><h3>BOUESTI CIS STUDENT GROUP 5 CLINIC</h3></h5>GROUP 5 assignment model</h5></h7>to login use username team 5, and password as bouesti2026</h7></div>", unsafe_allow_html=True)
     _, col2, _ = st.columns([1, 2, 1])
     with col2:
-        username = st.text_input("Username", value="team 5")
+        username = st.text_input("Username", type="username")
         password = st.text_input("Password", type="password")
         if st.button("Login 🔐"):
             if username == "team 5" and password == "bouesti2026":
@@ -147,3 +147,4 @@ else:
 
     st.markdown("---")
     st.markdown("<div style='text-align: center; color: #888;'>• BOUESTI CIS student GROUP 5 Project • </br> An assignment given by MRS T.O. ADEFEHINTI • March 2026 • Ikere-Ekiti</div>", unsafe_allow_html=True)
+

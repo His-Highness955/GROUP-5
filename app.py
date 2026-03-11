@@ -32,7 +32,6 @@ def login_portal():
         unsafe_allow_html=True
     )
     
-    # Display the logo clearly at the top
     if os.path.exists("logo.jpg"):
         st.image("logo.jpg", width=150)
     

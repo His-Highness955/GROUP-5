@@ -16,14 +16,14 @@ if 'logged_in' not in st.session_state:
 
 # --- Login Portal Logic ---
 def login_portal():
-    # CSS to set a blurred watermark background using the root image
+    # CSS for watermark using ccoeikere.png
     st.markdown(
         """
         <style>
         .stApp {
-            background: linear-gradient(rgba(255, 255, 255, 0.85), rgba(255, 255, 255, 0.85)), 
-                        url("logo.jpg");
-            background-size: cover;
+            background: linear-gradient(rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.9)), 
+                        url("ccoeikere.png");
+            background-size: contain;
             background-position: center;
             background-repeat: no-repeat;
         }
@@ -32,9 +32,9 @@ def login_portal():
         unsafe_allow_html=True
     )
     
-    # Adding the logo and header
-    if os.path.exists("logo.jpg"):
-        st.image("logo.jpg", width=150)
+    # Display the clear logo at the top
+    if os.path.exists("ccoeikere.png"):
+        st.image("ccoeikere.png", width=300)
     
     st.markdown("""
         <div style='text-align: center;'>
@@ -44,7 +44,6 @@ def login_portal():
         </div>
     """, unsafe_allow_html=True)
     
-    # Login form
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
         st.info("Log in with your Team 5 credentials.")

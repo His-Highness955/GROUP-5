@@ -13,28 +13,7 @@ st.set_page_config(page_title="Group 5 Clinical Portal", layout="wide", page_ico
 # --- Session State ---
 if 'logged_in' not in st.session_state:
     st.session_state.logged_in = False
-
-# --- Login Portal Logic ---
-def login_portal():
-    # CSS for watermark
-    st.markdown(
-        """
-        <style>
-        .stApp {
-            background: linear-gradient(rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.9)), 
-                        url("ccoeikere.png");
-            background-size: contain;
-            background-position: center;
-            background-repeat: no-repeat;
-        }
-        </style>
-        """,
-        unsafe_allow_html=True
-    )
-    
-    if os.path.exists("logo.jpg"):
-        st.image("logo.jpg", width=150)
-    
+   
     st.markdown("""
         <div style='text-align: center;'>
             <h1>🫀 CVD Risk Prediction Portal</h1>
@@ -204,4 +183,5 @@ else:
 
     st.markdown("---")
     st.markdown("<div style='text-align: center; color: #888;'>• BOUESTI CIS student GROUP 5 Project • </br> An assignment given by MRS T.O. ADEFEHINTI • March 2026 • Ikere-Ekiti</div>", unsafe_allow_html=True)
+
 

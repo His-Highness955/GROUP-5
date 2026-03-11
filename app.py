@@ -61,7 +61,7 @@ def login_portal():
             else:
                 st.error("Invalid Username or Password")
     st.markdown("---")
-    st.caption("Developed by CIS student GROUP 5 as model for CSC 309 research given by Mrs. T.O. Adefehinti.")
+    st.caption("</p>Developed by CIS student GROUP 5 as model for CSC 309 research given by Mrs. T.O. Adefehinti.")
 
 # --- Main App Execution ---
 if not st.session_state.logged_in:
@@ -148,4 +148,5 @@ else:
 
     st.markdown("---")
     st.markdown("<div style='text-align: center; color: #888;'>• BOUESTI CIS student GROUP 5 Project • </br> An assignment given by MRS T.O. ADEFEHINTI • March 2026 • Ikere-Ekiti</div>", unsafe_allow_html=True)
+
 

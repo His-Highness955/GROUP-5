@@ -40,29 +40,25 @@ def save_patient_data(patient_name, input_df, pred_type, score, risk_lvl):
     file_exists = os.path.exists(file_path)
     new_record.to_csv(file_path, mode='a', header=not file_exists, index=False)
 
-# --- Updated Feature Engineering (Domain-Informed) ---
+# --- Feature Engineering ---
 def engineer_features(age, glucose, bmi_val, hypertension, diabetes):
-    # 1. Age Groups
+    # Age groups
     if age <= 35: age_grp = 'young'
     elif age <= 55: age_grp = 'middle'
     else: age_grp = 'senior'
     
-    # 2. BMI Categories (WHO)
+    # BMI categories
     if bmi_val < 18.5: bmi_grp = 'underweight'
     elif bmi_val < 25: bmi_grp = 'normal'
     elif bmi_val < 30: bmi_grp = 'overweight'
     else: bmi_grp = 'obese'
     
-    # 3. Glucose Bands
+    # Glucose bands
     if glucose < 100: glu_grp = 'normal'
     elif glucose < 126: glu_grp = 'prediabetes'
     else: glu_grp = 'diabetes'
     
-    # 4. Interaction terms (calculated for the model)
-    age_htn_interaction = age * hypertension
-    bmi_diabetes_interaction = bmi_val * diabetes
-    
-    return age_grp, glu_grp, bmi_grp, age_htn_interaction, bmi_diabetes_interaction
+    return age_grp, glu_grp, bmi_grp
 
 # --- Main App ---
 if not st.session_state.logged_in:
@@ -74,7 +70,9 @@ else:
     st.markdown("### 🏥 EKITI STATE BOUESTI CIS STUDENT GROUP 5 CLINIC")
 
     with st.sidebar:
-        if st.button("Logout"): st.session_state.logged_in = False; st.rerun()
+        if st.button("Logout"): 
+            st.session_state.logged_in = False
+            st.rerun()
         st.header("👤 Patient Info")
         patient_name = st.text_input("Patient Full Name")
         gender = st.selectbox("Gender", ["Male", "Female", "Other"])
@@ -85,10 +83,7 @@ else:
         hypertension = st.radio("Hypertension History?", [0, 1], format_func=lambda x: "Yes" if x==1 else "No")
         diabetes = st.radio("Diabetes / Hyperglycemia?", [0, 1], format_func=lambda x: "Yes" if x==1 else "No")
         dyslipidemia = st.radio("Dyslipidemia (High Cholesterol)?", [0, 1], format_func=lambda x: "Yes" if x==1 else "No")
-        
-        # --- Glucose Constraint: Max 120 ---
         avg_glucose_level = st.number_input("Avg Glucose Level (mg/dL)", 0.0, 120.0, 90.0)
-        
         bmi_input = st.text_input("Body Mass Index (BMI) - Leave blank for Median (28.1)", value="24.5")
         
         st.header("⚠️ Secondary Contributors")
@@ -113,9 +108,7 @@ else:
             st.warning("Please ensure model is loaded and patient name is provided.")
         else:
             bmi = float(bmi_input) if bmi_input.strip() != "" else 28.1
-            
-            # Feature Engineering
-            age_grp, glu_grp, bmi_grp, int1, int2 = engineer_features(age, avg_glucose_level, bmi, hypertension, diabetes)
+            age_grp, glu_grp, bmi_grp = engineer_features(age, avg_glucose_level, bmi, hypertension, diabetes)
             
             input_df = pd.DataFrame({
                 'gender': [gender], 'age': [age], 'hypertension': [hypertension], 
@@ -124,9 +117,8 @@ else:
                 'age_group': [age_grp], 'glucose_group': [glu_grp], 'bmi_group': [bmi_grp]
             })
             
+            # Risk Calculation
             raw_score = model.decision_function(input_df)[0]
-            
-            # Clinical Multipliers
             clinical_boost = 1.0 + (diabetes * 0.25) + (dyslipidemia * 0.20) + (ckd * 0.15) + \
                              (stress * 0.10) + (sedentary * 0.10) + (infection * 0.15)
             
@@ -145,7 +137,6 @@ else:
             c2.metric("Probability", f"{risk_pct:.1f}%")
             c3.metric("Status", risk_lvl)
             
-            # Visualization
             st.subheader("📊 Clinical Impact Analysis")
             drivers = {
                 'Age/Bio': age * 0.01,
@@ -166,6 +157,5 @@ else:
                 os.remove('patient_records.csv')
                 st.rerun()
 
-  st.markdown("---")
-
+    st.markdown("---")
     st.markdown("<div style='text-align: center; color: #888;'>BOUESTI GROUP 5 Project • March 2026 • Ikere-Ekiti</div>", unsafe_allow_html=True)

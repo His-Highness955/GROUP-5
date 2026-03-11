@@ -58,7 +58,7 @@ else:
     
     with st.sidebar:
         if st.button("Logout"): st.session_state.logged_in = False; st.rerun()
-        st.header("👤 Patient Info")
+        st.header("👤 Patient Info 📝")
         patient_name = st.text_input("Patient Full Name")
         gender = st.selectbox("Gender", ["Male", "Female", "Other"])
         age = st.number_input("Age", 0, 120, 45)
@@ -135,3 +135,4 @@ else:
 
     st.markdown("---")
     st.markdown("<div style='text-align: center; color: #888;'>• BOUESTI CIS student GROUP 5 Project • </br> An assignment given by MRS T.O. ADEFEHINTI • March 2026 • Ikere-Ekiti</div>", unsafe_allow_html=True)
+

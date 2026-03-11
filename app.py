@@ -16,16 +16,48 @@ if 'logged_in' not in st.session_state:
 
 # --- Login Portal Logic ---
 def login_portal():
-    st.title("🔐 Secure Access")
-    st.info("Please log in to access the CVD Risk Predictor.")
-    username = st.text_input("Username", value="team 5")
-    password = st.text_input("Password", type="password")
-    if st.button("Login"):
-        if username == "team 5" and password == "bouesti2026":
-            st.session_state.logged_in = True
-            st.rerun()
-        else:
-            st.error("Invalid Username or Password")
+    # CSS to set a blurred watermark background
+    st.markdown(
+        """
+        <style>
+        .stApp {
+            background: linear-gradient(rgba(255, 255, 255, 0.85), rgba(255, 255, 255, 0.85)), 
+                        url("app/static/logo.jpg");
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+        }
+        </style>
+        """,
+        unsafe_allow_html=True
+    )
+    
+    # Adding the logo and header
+    st.image("static/logo.jpg", width=150)
+    st.markdown("""
+        <div style='text-align: center;'>
+            <h1>🫀 CVD Risk Prediction Portal</h1>
+            <h3>BOUESTI CIS STUDENT GROUP 5 CLINIC</h3>
+            <p>Authorized personnel only. Please enter your credentials to proceed.</p>
+        </div>
+    """, unsafe_allow_html=True)
+    
+    # Login form
+    col1, col2, col3 = st.columns([1, 2, 1])
+    with col2:
+        st.info("Log in with your Team 5 credentials.")
+        username = st.text_input("Username", value="team 5")
+        password = st.text_input("Password", type="password")
+        
+        if st.button("Login 🔐"):
+            if username == "team 5" and password == "bouesti2026":
+                st.session_state.logged_in = True
+                st.rerun()
+            else:
+                st.error("Invalid Username or Password")
+                
+    st.markdown("---")
+    st.caption("Developed for the CIS Department Coursework under the supervision of Mrs. T.O. Adefehinti.")
 
 # --- Data Persistence ---
 def save_patient_data(patient_name, input_df, pred_type, score, risk_lvl):
@@ -42,18 +74,15 @@ def save_patient_data(patient_name, input_df, pred_type, score, risk_lvl):
 
 # --- Feature Engineering ---
 def engineer_features(age, glucose, bmi_val, hypertension, diabetes):
-    # Age groups
     if age <= 35: age_grp = 'young'
     elif age <= 55: age_grp = 'middle'
     else: age_grp = 'senior'
     
-    # BMI categories
     if bmi_val < 18.5: bmi_grp = 'underweight'
     elif bmi_val < 25: bmi_grp = 'normal'
     elif bmi_val < 30: bmi_grp = 'overweight'
     else: bmi_grp = 'obese'
     
-    # Glucose bands
     if glucose < 100: glu_grp = 'normal'
     elif glucose < 126: glu_grp = 'prediabetes'
     else: glu_grp = 'diabetes'
@@ -81,7 +110,6 @@ else:
         
         st.header("🏥 Primary Clinical Data")
         hypertension = st.radio("Hypertension History?", [0, 1], format_func=lambda x: "Yes" if x==1 else "No")
-        # Added Blood Pressure Input fields
         systolic_bp = st.number_input("Systolic BP (mmHg)", 70, 250, 120)
         diastolic_bp = st.number_input("Diastolic BP (mmHg)", 40, 150, 80)
         
@@ -121,8 +149,6 @@ else:
                 'age_group': [age_grp], 'glucose_group': [glu_grp], 'bmi_group': [bmi_grp]
             })
             
-            # Risk Calculation with Blood Pressure multiplier
-            # BP Boost: If systolic > 130 or diastolic > 85, add incremental risk
             bp_boost = 0.0
             if systolic_bp >= 140 or diastolic_bp >= 90: bp_boost = 0.30
             elif systolic_bp >= 130 or diastolic_bp >= 85: bp_boost = 0.15
@@ -159,7 +185,6 @@ else:
             sns.barplot(x='Impact', y='Factor', data=driver_df, palette='OrRd_r')
             st.pyplot(fig)
             
-            # --- Blood Pressure Alert Logic ---
             st.subheader("🩸 Blood Pressure Assessment")
             if systolic_bp >= 180 or diastolic_bp >= 120:
                 st.error("🚨 HYPERTENSIVE CRISIS: Immediate medical attention required.")

@@ -1,4 +1,4 @@
-import streamlit as st
+ import streamlit as st
 import pandas as pd
 import numpy as np
 import joblib
@@ -81,6 +81,10 @@ else:
         
         st.header("🏥 Primary Clinical Data")
         hypertension = st.radio("Hypertension History?", [0, 1], format_func=lambda x: "Yes" if x==1 else "No")
+        # Added Blood Pressure Input fields
+        systolic_bp = st.number_input("Systolic BP (mmHg)", 70, 250, 120)
+        diastolic_bp = st.number_input("Diastolic BP (mmHg)", 40, 150, 80)
+        
         diabetes = st.radio("Diabetes / Hyperglycemia?", [0, 1], format_func=lambda x: "Yes" if x==1 else "No")
         dyslipidemia = st.radio("Dyslipidemia (High Cholesterol)?", [0, 1], format_func=lambda x: "Yes" if x==1 else "No")
         avg_glucose_level = st.number_input("Avg Glucose Level (mg/dL)", 0.0, 120.0, 90.0)
@@ -117,10 +121,15 @@ else:
                 'age_group': [age_grp], 'glucose_group': [glu_grp], 'bmi_group': [bmi_grp]
             })
             
-            # Risk Calculation
+            # Risk Calculation with Blood Pressure multiplier
+            # BP Boost: If systolic > 130 or diastolic > 85, add incremental risk
+            bp_boost = 0.0
+            if systolic_bp >= 140 or diastolic_bp >= 90: bp_boost = 0.30
+            elif systolic_bp >= 130 or diastolic_bp >= 85: bp_boost = 0.15
+            
             raw_score = model.decision_function(input_df)[0]
             clinical_boost = 1.0 + (diabetes * 0.25) + (dyslipidemia * 0.20) + (ckd * 0.15) + \
-                             (stress * 0.10) + (sedentary * 0.10) + (infection * 0.15)
+                             (stress * 0.10) + (sedentary * 0.10) + (infection * 0.15) + bp_boost
             
             multipliers = {"Heart": 0.9, "Stroke": 1.1, "Combined": 1.4}
             adj_score = raw_score * multipliers.get(pred_type, 1.0) * clinical_boost
@@ -140,7 +149,7 @@ else:
             st.subheader("📊 Clinical Impact Analysis")
             drivers = {
                 'Age/Bio': age * 0.01,
-                'Primary (HTN/DB)': (hypertension + diabetes) * 0.6,
+                'Primary (HTN/DB/BP)': (hypertension + diabetes + (bp_boost * 2)) * 0.6,
                 'Lipids/Dyslipidemia': dyslipidemia * 0.4,
                 'Lifestyle/Stress': (stress + sedentary + (1 if smoking_status=="smokes" else 0)) * 0.3,
                 'Organ/Infection': (ckd + infection) * 0.4
@@ -149,6 +158,17 @@ else:
             fig, ax = plt.subplots(figsize=(10, 4))
             sns.barplot(x='Impact', y='Factor', data=driver_df, palette='OrRd_r')
             st.pyplot(fig)
+            
+            # --- Blood Pressure Alert Logic ---
+            st.subheader("🩸 Blood Pressure Assessment")
+            if systolic_bp >= 180 or diastolic_bp >= 120:
+                st.error("🚨 HYPERTENSIVE CRISIS: Immediate medical attention required.")
+            elif systolic_bp >= 140 or diastolic_bp >= 90:
+                st.warning("⚠️ Stage 2 Hypertension: Consult a physician immediately.")
+            elif systolic_bp >= 130 or diastolic_bp >= 80:
+                st.info("ℹ️ Stage 1 Hypertension: Lifestyle changes and monitoring advised.")
+            else:
+                st.success("✅ Blood pressure is within a normal range.")
 
     with st.expander("Admin 🗃️: Patient Database"):
         if os.path.exists('patient_records.csv'):
@@ -159,6 +179,3 @@ else:
 
     st.markdown("---")
     st.markdown("<div style='text-align: center; color: #888;'>• BOUESTI CIS student GROUP 5 Project • </br> An assignment given by MRS T.O. ADEFEHINTI • March 2026 • Ikere-Ekiti</div>", unsafe_allow_html=True)
-
-
-

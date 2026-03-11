@@ -61,8 +61,8 @@ def login_portal():
     
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
-        st.info("Log in with your Team 5 credentials.")
-        username = st.text_input("Username", value="team 5")
+        st.info("Log in with this credentials. username: team 5, password: bouesti2026")
+        username = st.text_input("Username", value="username")
         password = st.text_input("Password", type="password")
         
         if st.button("Login 🔐"):
@@ -88,7 +88,7 @@ else:
         if st.button("Logout"): 
             st.session_state.logged_in = False
             st.rerun()
-        st.header("👤 Patient Info")
+        st.header("👤 Patient Info 📝")
         patient_name = st.text_input("Patient Full Name")
         gender = st.selectbox("Gender", ["Male", "Female", "Other"])
         age = st.number_input("Age", 0, 120, 45)
@@ -191,3 +191,4 @@ else:
 
     st.markdown("---")
     st.markdown("<div style='text-align: center; color: #888;'>• BOUESTI CIS student GROUP 5 Project • </br> An assignment given by MRS T.O. ADEFEHINTI • March 2026 • Ikere-Ekiti</div>", unsafe_allow_html=True)
+

@@ -34,7 +34,6 @@ def engineer_features(age, glucose, bmi_val, hypertension, diabetes):
 
 # --- UI Components ---
 def login_portal():
-    st.markdown("""<style>.stApp {background: linear-gradient(rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.9)), url("/app/static/ccoeikere.png"); background-size: contain; background-position: center; background-repeat: no-repeat;}</style>""", unsafe_allow_html=True)
     st.markdown("<div style='text-align: center;'><h1>🫀 CVD Risk Prediction Portal</h1><h3>BOUESTI CIS STUDENT GROUP 5 CLINIC</h3></div>", unsafe_allow_html=True)
     _, col2, _ = st.columns([1, 2, 1])
     with col2:
@@ -135,4 +134,3 @@ else:
 
     st.markdown("---")
     st.markdown("<div style='text-align: center; color: #888;'>• BOUESTI CIS student GROUP 5 Project • </br> An assignment given by MRS T.O. ADEFEHINTI • March 2026 • Ikere-Ekiti</div>", unsafe_allow_html=True)
-

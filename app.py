@@ -34,7 +34,7 @@ def engineer_features(age, glucose, bmi_val, hypertension, diabetes):
 
 # --- UI Components ---
 def login_portal():
-    st.markdown("<div style='text-align: center;'><h1>🫀 CVD Risk Prediction Portal</h1><h3>BOUESTI CIS STUDENT GROUP 5 CLINIC</h3></div>", unsafe_allow_html=True)
+    st.markdown("<div style='text-align: center;'><h1>🫀 CVD Risk Prediction Portal</h1><h3>BOUESTI CIS STUDENT GROUP 5 CLINIC</h3></h5>use username as team 5</h5></h5>password as bouesti2026</h5></div>", unsafe_allow_html=True)
     _, col2, _ = st.columns([1, 2, 1])
     with col2:
         username = st.text_input("Username")

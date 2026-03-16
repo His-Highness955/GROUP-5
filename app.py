@@ -6,7 +6,7 @@ import os
 import matplotlib.pyplot as plt
 import seaborn as sns
 from datetime import datetime
-import sklearn  # Added to ensure scikit-learn classes are available for joblib
+import sklearn  # This requires scikit-learn to be in your requirements.txt
 
 # --- Page Config ---
 st.set_page_config(page_title="Group 5 Clinical Portal", layout="wide", page_icon="🫀")
